@@ -1,0 +1,2243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>集团工厂生产管制塔</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #081017;
+      --surface: #0f1922;
+      --surface-2: #14212c;
+      --surface-3: #192a36;
+      --line: #2a3b47;
+      --line-strong: #3c5260;
+      --text: #edf4f7;
+      --muted: #94a7b2;
+      --cyan: #18b8d8;
+      --cyan-soft: #0e7187;
+      --green: #54d49a;
+      --yellow: #f4c95d;
+      --red: #ff6b72;
+      --blue: #4d8fe8;
+      --purple: #a389e8;
+      --node-w: clamp(76px, 5.35vw, 104px);
+      --node-h: 88px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select { font: inherit; }
+
+    button { color: inherit; }
+
+    .app {
+      min-width: 1280px;
+      height: 100vh;
+      padding: 14px 18px 16px;
+      display: grid;
+      grid-template-rows: 64px 118px minmax(0, 1fr);
+      gap: 12px;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: 34px 34px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto minmax(360px, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(15, 25, 34, .96);
+    }
+
+    .brand-lockup {
+      height: 42px;
+      min-width: 338px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      border-radius: 6px;
+      background: #f8fbfc;
+    }
+
+    .brand-lockup img { display: block; object-fit: contain; }
+    .brand-matsuoka { width: 174px; height: 31px; }
+    .brand-divider { width: 1px; height: 25px; background: #c8d4db; }
+    .brand-hannao { width: 128px; height: 25px; }
+
+    .title-block { min-width: 0; }
+    .title-block h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .title-meta {
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .demo-tag,
+    .status-chip,
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .demo-tag {
+      padding: 0 7px;
+      color: #071217;
+      background: var(--yellow);
+      font-weight: 700;
+    }
+
+    .time-panel {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .time-item { text-align: right; }
+    .time-label { color: var(--muted); font-size: 11px; }
+    .time-value { margin-top: 3px; font-size: 14px; font-weight: 650; }
+    .clock { color: var(--cyan); font-variant-numeric: tabular-nums; }
+
+    .factory-overview {
+      display: grid;
+      grid-template-columns: 170px repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .overview-heading {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .overview-heading h2 { margin: 0; font-size: 15px; }
+    .overview-heading strong { display: block; margin-top: 5px; font-size: 28px; }
+    .overview-heading span { color: var(--muted); font-size: 11px; line-height: 1.55; }
+
+    .factory-card {
+      position: relative;
+      min-width: 0;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr) 96px;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease;
+    }
+
+    .factory-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--risk-color, var(--green));
+    }
+
+    .factory-card:hover { border-color: var(--line-strong); background: var(--surface-2); }
+    .factory-card.active { border-color: var(--cyan); background: #10232d; box-shadow: inset 0 0 0 1px rgba(24,184,216,.18); }
+    .factory-card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+    .factory-name-row { display: flex; align-items: center; gap: 8px; }
+    .factory-name { font-size: 18px; font-weight: 720; white-space: nowrap; }
+    .factory-rank { color: var(--muted); font-size: 11px; }
+    .factory-state { margin-top: 9px; display: inline-flex; align-items: center; gap: 6px; color: var(--risk-color); font-size: 12px; font-weight: 650; }
+    .risk-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 9px currentColor; }
+
+    .factory-kpis { display: grid; grid-template-columns: repeat(4, 1fr); min-width: 0; }
+    .factory-kpi { min-width: 0; padding: 0 12px; border-left: 1px solid var(--line); }
+    .factory-kpi-label { color: var(--muted); font-size: 11px; }
+    .factory-kpi-value { margin-top: 5px; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .factory-kpi-value small { margin-left: 2px; color: var(--muted); font-size: 11px; font-weight: 500; }
+
+    .factory-alerts { text-align: center; }
+    .alert-number { color: var(--risk-color); font-size: 26px; font-weight: 760; font-variant-numeric: tabular-nums; }
+    .alert-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .view-hint { margin-top: 7px; color: var(--cyan); font-size: 11px; }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 324px;
+      gap: 12px;
+    }
+
+    .process-section,
+    .detail-panel {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .process-section {
+      display: grid;
+      grid-template-rows: 52px minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .process-toolbar {
+      padding: 0 12px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .active-factory { min-width: 180px; }
+    .active-factory strong { display: block; font-size: 15px; }
+    .active-factory span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+
+    .toolbar-spacer { flex: 1; }
+
+    .search-wrap { position: relative; width: 174px; }
+    .search-wrap input {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px 0 30px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      outline: none;
+      background: #0b141b;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .search-wrap input:focus { border-color: var(--cyan); }
+    .search-mark { position: absolute; left: 10px; top: 7px; color: var(--muted); font-size: 13px; }
+
+    select {
+      height: 32px;
+      padding: 0 28px 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b141b;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+
+    select:focus { border-color: var(--cyan); }
+
+    .zoom-controls { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .icon-button {
+      width: 32px;
+      height: 30px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #0b141b;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .icon-button:last-child { border-right: 0; }
+    .icon-button:hover { background: var(--surface-3); color: var(--cyan); }
+    .icon-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+
+    .process-viewport {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background: #0a141b;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .process-viewport.dragging { cursor: grabbing; }
+
+    .flow-content {
+      position: absolute;
+      inset: 0;
+      transform-origin: center center;
+      transition: transform .16s ease;
+    }
+
+    .phase-strip {
+      position: absolute;
+      top: 15px;
+      left: 18px;
+      right: 18px;
+      height: 24px;
+      display: grid;
+      grid-template-columns: 3fr 3fr 3fr 3fr 3fr 3fr 3fr;
+      gap: 5px;
+      z-index: 3;
+    }
+
+    .phase-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 2px solid var(--phase-color);
+      color: var(--muted);
+      font-size: 10px;
+      background: color-mix(in srgb, var(--phase-color) 9%, transparent);
+    }
+
+    #edgeLayer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
+    .flow-edge { fill: none; stroke: #2a515d; stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .flow-edge.active { stroke: var(--cyan); stroke-width: 3; filter: drop-shadow(0 0 4px rgba(24,184,216,.8)); }
+    .flow-edge.dimmed { opacity: .15; }
+
+    .node-layer { position: absolute; inset: 0; z-index: 2; }
+
+    .process-node {
+      position: absolute;
+      width: var(--node-w);
+      height: var(--node-h);
+      padding: 9px 9px 8px;
+      border: 1px solid var(--line-strong);
+      border-top: 3px solid var(--risk-color);
+      border-radius: 6px;
+      background: #14212a;
+      cursor: pointer;
+      text-align: left;
+      box-shadow: 0 5px 12px rgba(0,0,0,.16);
+      transition: transform .16s ease, border-color .16s ease, opacity .16s ease, background .16s ease;
+    }
+
+    .process-node::after {
+      content: "";
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      width: 7px;
+      height: 7px;
+      border: 2px solid #14212a;
+      border-radius: 50%;
+      background: var(--risk-color);
+    }
+
+    .process-node:hover { transform: translateY(-3px); border-color: var(--risk-color); background: #192b36; }
+    .process-node.selected { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(24,184,216,.22), 0 8px 18px rgba(0,0,0,.28); }
+    .process-node.dimmed { opacity: .18; }
+    .process-node.filtered { display: none; }
+    .process-node:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+    .node-topline { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+    .node-no { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .node-no::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--role-color); }
+    .progress-mark { width: 17px; height: 5px; border-radius: 2px; background: #43535d; }
+    .progress-mark.completed { background: var(--green); }
+    .progress-mark.active { background: var(--cyan); box-shadow: 0 0 7px rgba(24,184,216,.7); }
+    .progress-mark.pending { background: #46545c; }
+    .node-label { min-height: 31px; margin-top: 7px; font-size: 12px; line-height: 1.25; font-weight: 650; overflow-wrap: anywhere; }
+    .node-metric { margin-top: 5px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .center-insight {
+      position: absolute;
+      left: 50%;
+      top: 29%;
+      width: min(860px, 72%);
+      transform: translate(-50%, -48%);
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .shift-summary,
+    .alert-summary {
+      min-height: 132px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(15, 25, 34, .88);
+    }
+
+    .center-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .center-title strong { font-size: 13px; }
+    .center-title span { color: var(--muted); font-size: 10px; }
+    .summary-grid { margin-top: 13px; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .summary-item { padding: 0 12px; border-left: 1px solid var(--line); }
+    .summary-item:first-child { padding-left: 0; border-left: 0; }
+    .summary-item label { display: block; color: var(--muted); font-size: 10px; }
+    .summary-item strong { display: block; margin-top: 6px; font-size: 20px; font-variant-numeric: tabular-nums; }
+    .summary-item small { margin-left: 2px; color: var(--muted); font-size: 10px; }
+
+    .alert-list { margin-top: 9px; display: grid; gap: 7px; }
+    .alert-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+    .alert-row .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--alert-color); box-shadow: 0 0 7px var(--alert-color); }
+    .alert-row strong { min-width: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alert-row time { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+
+    .empty-result {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 6;
+      padding: 18px 24px;
+      transform: translate(-50%, -50%);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #101b24;
+      text-align: center;
+      display: none;
+    }
+
+    .empty-result strong { display: block; font-size: 14px; }
+    .empty-result span { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+
+    .legend {
+      position: absolute;
+      right: 15px;
+      bottom: 12px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--legend-color); }
+    .legend-bar { width: 14px; height: 4px; border-radius: 2px; background: var(--legend-color); }
+
+    .detail-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .detail-header { padding: 15px 16px 12px; border-bottom: 1px solid var(--line); }
+    .detail-eyebrow { color: var(--cyan); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .detail-title-row { margin-top: 7px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .detail-title-row h2 { margin: 0; font-size: 18px; line-height: 1.25; }
+    .detail-index { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+    .status-row { margin-top: 11px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .status-chip { padding: 0 8px; color: var(--chip-color); border: 1px solid color-mix(in srgb, var(--chip-color) 45%, transparent); background: color-mix(in srgb, var(--chip-color) 9%, transparent); font-size: 10px; }
+
+    .detail-content { min-height: 0; padding: 0 16px 16px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+    .detail-section { padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .detail-section:last-child { border-bottom: 0; }
+    .section-label { margin-bottom: 9px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .detail-description { margin: 0; color: #d5e1e6; font-size: 12px; line-height: 1.65; }
+
+    .metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric-box { min-width: 0; padding: 10px; border-left: 2px solid var(--box-color, var(--cyan)); background: #0b151c; }
+    .metric-box label { display: block; color: var(--muted); font-size: 10px; }
+    .metric-box strong { display: block; margin-top: 5px; font-size: 18px; font-variant-numeric: tabular-nums; }
+    .metric-box small { color: var(--muted); font-size: 9px; }
+
+    .definition-list { margin: 0; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px 10px; font-size: 11px; line-height: 1.45; }
+    .definition-list dt { color: var(--muted); }
+    .definition-list dd { margin: 0; overflow-wrap: anywhere; }
+
+    .rule-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+    .rule-list li { position: relative; padding-left: 13px; color: #d5e1e6; font-size: 11px; line-height: 1.45; }
+    .rule-list li::before { content: ""; position: absolute; left: 0; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
+
+    .exception-box { padding: 10px 11px; border-left: 3px solid var(--red); background: rgba(255,107,114,.08); }
+    .exception-box strong { display: block; color: var(--red); font-size: 11px; }
+    .exception-box p { margin: 6px 0 0; color: #e9d5d7; font-size: 11px; line-height: 1.5; }
+    .exception-box.normal { border-left-color: var(--green); background: rgba(84,212,154,.07); }
+    .exception-box.normal strong { color: var(--green); }
+
+    .detail-footer { padding: 11px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; }
+    .data-source { display: inline-flex; align-items: center; gap: 6px; }
+    .data-source::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); }
+
+    @media (max-height: 820px) {
+      .app { padding-top: 10px; padding-bottom: 10px; grid-template-rows: 58px 106px minmax(0, 1fr); gap: 9px; }
+      .topbar { padding: 0 12px; }
+      .brand-lockup { height: 38px; }
+      .factory-overview { grid-template-columns: 150px repeat(2, minmax(0, 1fr)); }
+      .factory-card { padding-top: 9px; padding-bottom: 9px; }
+      .process-section { grid-template-rows: 46px minmax(0, 1fr); }
+      .process-node { height: 78px; }
+      .center-insight { width: min(780px, 68%); }
+      .shift-summary, .alert-summary { min-height: 116px; padding-top: 11px; padding-bottom: 11px; }
+      .detail-section { padding: 10px 0; }
+    }
+
+    @media (max-width: 1500px) {
+      :root { --node-w: 68px; }
+      .workspace { grid-template-columns: minmax(0, 1fr) 280px; }
+      .factory-card { grid-template-columns: 132px minmax(0, 1fr) 78px; gap: 9px; }
+      .factory-kpi { padding: 0 7px; }
+      .factory-kpi-value { font-size: 18px; }
+      .node-label { font-size: 10px; line-height: 1.2; }
+      .node-metric { display: none; }
+      .center-insight { width: min(680px, 72%); }
+      .summary-item { padding: 0 7px; }
+      .summary-item strong { font-size: 17px; }
+    }
+
+    /* Visual language aligned with the IMBD sewing team dashboard reference. */
+    :root {
+      --bg: #04182a;
+      --surface: #092d50;
+      --surface-2: #0d3a67;
+      --surface-3: #124778;
+      --line: #245c91;
+      --line-strong: #3c83bb;
+      --text: #f5fbff;
+      --muted: #a9c7df;
+      --cyan: #39e4ef;
+      --cyan-soft: #0b9fbd;
+      --blue: #0789f5;
+      --green: #2ee6bd;
+      --yellow: #ffb51b;
+      --red: #ff3857;
+    }
+
+    .app {
+      grid-template-rows: 66px 118px minmax(0, 1fr) 34px;
+      background:
+        linear-gradient(rgba(26, 103, 169, .12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 103, 169, .12) 1px, transparent 1px),
+        #04182a;
+      background-size: 48px 48px;
+    }
+
+    .topbar {
+      position: relative;
+      grid-template-columns: 350px minmax(430px, 1fr) 300px;
+      border-color: #245f97;
+      background: #0b2b4c;
+      box-shadow: inset 0 -1px 0 rgba(75, 199, 255, .25), 0 5px 18px rgba(0, 7, 18, .28);
+    }
+
+    .brand-lockup {
+      min-width: 210px;
+      padding-left: 2px;
+      background: transparent;
+    }
+
+    .brand-lockup img {
+      filter: brightness(0) invert(1);
+      opacity: .98;
+    }
+
+    .brand-divider { display: none; }
+
+    .brand-hannao {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      width: 128px;
+      height: 25px;
+      transform: translateY(-50%);
+    }
+
+    .title-block {
+      position: relative;
+      text-align: center;
+      isolation: isolate;
+    }
+
+    .title-block h1 {
+      font-size: 29px;
+      text-shadow: 0 0 14px rgba(123, 211, 255, .58);
+    }
+
+    .title-meta { display: none; }
+    .clock { color: #7beaff; text-shadow: 0 0 9px rgba(57, 228, 239, .45); }
+
+    .time-panel { justify-content: flex-end; padding-right: 148px; }
+    .time-panel .time-item { min-width: 142px; }
+    .time-panel .time-item:first-child { display: none; }
+
+    .overview-heading,
+    .factory-card,
+    .process-section,
+    .detail-panel {
+      border-color: #28679f;
+      background: linear-gradient(135deg, rgba(13, 58, 103, .98), rgba(7, 38, 68, .98));
+      box-shadow: inset 0 0 24px rgba(36, 119, 190, .08), 0 7px 18px rgba(0, 8, 21, .24);
+    }
+
+    .overview-heading,
+    .factory-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overview-heading::after,
+    .factory-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 18px;
+      width: 155px;
+      height: 18px;
+      border-top: 2px solid #4cddff;
+      border-right: 2px solid #4cddff;
+      border-radius: 0 18px 0 0;
+      opacity: .8;
+      pointer-events: none;
+    }
+
+    .overview-heading h2,
+    .factory-name { font-style: italic; }
+    .overview-heading strong { color: #62e8ff; text-shadow: 0 0 12px rgba(57, 228, 239, .34); }
+
+    .factory-card:hover { border-color: #4aa8e9; background: linear-gradient(135deg, #10487b, #0a3259); }
+    .factory-card.active {
+      border-color: #56dcff;
+      background: linear-gradient(135deg, #104b7f, #092f55);
+      box-shadow: inset 0 0 0 1px rgba(100, 224, 255, .22), 0 0 16px rgba(25, 146, 220, .2);
+    }
+
+    .factory-kpi { border-left-color: rgba(91, 153, 204, .4); }
+    .factory-kpi-value { color: #f7fcff; text-shadow: 0 0 10px rgba(75, 186, 255, .22); }
+    .alert-number { text-shadow: 0 0 12px currentColor; }
+
+    .process-toolbar {
+      position: relative;
+      border-bottom-color: #27679d;
+      background: rgba(9, 42, 74, .8);
+    }
+
+    .process-toolbar::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 285px;
+      height: 18px;
+      border-bottom: 2px solid #56dfff;
+      border-right: 2px solid #56dfff;
+      border-radius: 0 0 24px 0;
+      pointer-events: none;
+    }
+
+    .active-factory strong { font-style: italic; text-shadow: 0 0 8px rgba(110, 208, 255, .4); }
+    .search-wrap input,
+    select,
+    .icon-button { border-color: #2b6799; background: #071f36; }
+    .search-wrap input:focus,
+    select:focus { border-color: #52ddff; box-shadow: 0 0 0 1px rgba(82, 221, 255, .18); }
+
+    .process-viewport {
+      background: #061f37;
+      isolation: isolate;
+    }
+
+    .process-viewport::before {
+      content: "";
+      position: absolute;
+      left: -12%;
+      right: -12%;
+      bottom: -39%;
+      height: 62%;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(16, 111, 211, .34) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 111, 211, .34) 1px, transparent 1px);
+      background-size: 46px 34px;
+      transform: perspective(330px) rotateX(58deg);
+      transform-origin: bottom center;
+      opacity: .72;
+      pointer-events: none;
+    }
+
+    .phase-strip { z-index: 4; }
+    .phase-label {
+      color: #b5d3e8;
+      border-top-color: #48cfff;
+      background: rgba(10, 71, 119, .32);
+    }
+
+    #edgeLayer { z-index: 1; }
+    .flow-edge { stroke: #1f5889; stroke-width: 3; filter: drop-shadow(0 0 3px rgba(28, 129, 220, .32)); }
+    .flow-edge.active { stroke: #7beaff; filter: drop-shadow(0 0 5px rgba(78, 224, 255, .88)); }
+    .flow-edge-stream {
+      fill: none;
+      stroke: rgba(91, 207, 255, .78);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 3 15;
+      vector-effect: non-scaling-stroke;
+      filter: drop-shadow(0 0 4px rgba(75, 205, 255, .78));
+      animation: edge-flow 1.35s linear infinite;
+    }
+    .flow-edge-stream.active {
+      stroke: #d5fbff;
+      stroke-width: 3;
+      stroke-dasharray: 5 13;
+      filter: drop-shadow(0 0 6px rgba(123, 234, 255, 1));
+      animation-duration: .9s;
+    }
+
+    @keyframes edge-flow {
+      to { stroke-dashoffset: -36; }
+    }
+
+    .process-node {
+      --node-circle: 48px;
+      height: 84px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+      text-align: center;
+    }
+
+    .process-node::after { display: none; }
+    .process-node:hover { transform: translateY(-3px); border: 0; background: transparent; }
+    .process-node.selected { border: 0; box-shadow: none; }
+    .process-node.selected .node-no { box-shadow: 0 0 0 3px #74e9ff, 0 0 20px rgba(45, 202, 255, .95), inset 0 0 13px rgba(255,255,255,.45); }
+    .process-node.dimmed { opacity: .16; }
+
+    .node-topline {
+      height: var(--node-circle);
+      justify-content: center;
+    }
+
+    .node-no {
+      position: relative;
+      width: var(--node-circle);
+      height: var(--node-circle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      border: 2px solid rgba(118, 228, 255, .8);
+      border-radius: 50%;
+      color: #fff;
+      background: radial-gradient(circle at 34% 24%, #d8f7ff 0, #33b9ff 22%, #067cf0 53%, #00468e 100%);
+      box-shadow: 0 0 13px rgba(21, 145, 255, .7), inset 0 0 11px rgba(255,255,255,.4);
+      font-size: 15px;
+      font-weight: 760;
+      text-shadow: 0 1px 4px rgba(0, 29, 74, .8);
+    }
+
+    .node-no::before {
+      position: absolute;
+      left: -1px;
+      top: -1px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid #082844;
+      background: var(--role-color);
+      box-shadow: 0 0 6px var(--role-color);
+    }
+
+    .process-node.risk-warning .node-no {
+      border-color: #ffe181;
+      background: radial-gradient(circle at 34% 24%, #fff2b3 0, #ffba28 35%, #f37900 74%, #8b3600 100%);
+      box-shadow: 0 0 15px rgba(255, 178, 23, .8), inset 0 0 10px rgba(255,255,255,.38);
+    }
+
+    .process-node.risk-warning .node-no::after,
+    .process-node.risk-danger .node-no::after {
+      content: "";
+      position: absolute;
+      inset: -7px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      animation: node-risk-pulse 1.8s ease-out infinite;
+    }
+
+    .process-node.risk-warning .node-no::after {
+      color: #ffd45c;
+    }
+
+    .process-node.risk-danger .node-no {
+      border: 4px solid #ff3857;
+      background: radial-gradient(circle at 34% 24%, #ffd6da 0, #ff7080 28%, #e92042 62%, #7a0a23 100%);
+      box-shadow: 0 0 0 4px rgba(255, 38, 74, .25), 0 0 18px rgba(255, 42, 76, .9), inset 0 0 10px rgba(255,255,255,.42);
+    }
+
+    .process-node.risk-danger .node-no::after {
+      color: #ff4562;
+      animation-duration: 1.05s;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    @keyframes node-risk-pulse {
+      0% { transform: scale(.82); opacity: .9; }
+      70%, 100% { transform: scale(1.34); opacity: 0; }
+    }
+
+    .progress-mark {
+      position: absolute;
+      left: 50%;
+      top: 51px;
+      width: 22px;
+      height: 3px;
+      transform: translateX(-50%);
+      box-shadow: 0 0 5px currentColor;
+    }
+
+    .node-label {
+      min-height: 0;
+      margin-top: 9px;
+      color: #d8efff;
+      font-size: 10px;
+      line-height: 1.18;
+      text-align: center;
+      text-shadow: 0 1px 4px rgba(0,0,0,.55);
+    }
+
+    .node-metric { display: none; }
+
+    .center-insight { z-index: 3; }
+    /* The 38-node three-row layout uses the overview cards and ticker for summaries. */
+    .center-insight { display: none; }
+    .shift-summary,
+    .alert-summary {
+      border: 1px solid #2b6699;
+      border-top-color: #4fdcff;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(12, 62, 108, .94), rgba(7, 42, 74, .94));
+      box-shadow: inset 0 0 18px rgba(29, 130, 211, .12), 0 8px 22px rgba(0, 10, 28, .28);
+    }
+
+    .center-title strong { font-style: italic; color: #f4fbff; }
+    .summary-item { border-left-color: rgba(91, 153, 204, .4); }
+    .summary-item strong { color: #6cecff; text-shadow: 0 0 10px rgba(57, 228, 239, .3); }
+
+    .legend { color: #b9d2e4; }
+    .detail-panel { position: relative; }
+    .detail-header { position: relative; border-bottom-color: #28679f; background: rgba(8, 40, 70, .72); }
+    .detail-title-row h2 { font-style: italic; text-shadow: 0 0 9px rgba(94, 209, 255, .35); }
+    .detail-content { background: rgba(5, 31, 55, .25); }
+    .detail-section { border-bottom-color: rgba(51, 110, 158, .55); }
+    .metric-box { background: rgba(5, 29, 51, .72); }
+    .exception-box { background: rgba(255, 56, 87, .12); }
+    .exception-box.normal { background: rgba(46, 230, 189, .1); }
+    .detail-footer { border-top-color: #28679f; background: rgba(7, 35, 61, .72); }
+
+    .alert-ticker {
+      min-width: 0;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid #2e689d;
+      border-radius: 4px;
+      background: rgba(5, 31, 55, .96);
+      color: #ffbf28;
+      overflow: hidden;
+      box-shadow: inset 0 0 14px rgba(21, 98, 166, .16);
+    }
+
+    .ticker-label {
+      flex: 0 0 auto;
+      padding-right: 12px;
+      border-right: 1px solid rgba(255, 191, 40, .45);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .ticker-text {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      font-weight: 600;
+      text-shadow: 0 0 8px rgba(255, 181, 27, .3);
+    }
+
+    .ticker-time { margin-left: auto; color: #b9d2e4; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+    @media (max-height: 820px) {
+      .app { grid-template-rows: 58px 102px minmax(0, 1fr) 30px; }
+      .title-block h1 { font-size: 25px; }
+      .process-node { --node-circle: 42px; height: 72px; }
+      .progress-mark { top: 45px; }
+      .node-label { margin-top: 7px; font-size: 9px; }
+    }
+
+    /* Compact factory navigation and overlay node-detail drawer. */
+    .app {
+      grid-template-rows: 66px 54px minmax(0, 1fr) 34px;
+      gap: 10px;
+    }
+
+    .factory-overview {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .overview-heading {
+      min-width: 0;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 1px solid #28679f;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(13, 58, 103, .98), rgba(7, 38, 68, .98));
+    }
+
+    .overview-heading::after {
+      left: 12px;
+      width: 90px;
+      height: 10px;
+    }
+
+    .overview-heading h2 { font-size: 13px; }
+    .overview-heading span { margin-top: 4px; white-space: nowrap; font-size: 10px; }
+    .overview-heading span strong { display: inline; margin: 0; font-size: 16px; }
+
+    .factory-nav-shell {
+      min-width: 0;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #28679f;
+      border-radius: 6px;
+      background: rgba(7, 35, 61, .86);
+    }
+
+    .factory-tabs {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .factory-tab,
+    .more-factories summary,
+    .more-factory-option {
+      border: 1px solid #2b6799;
+      border-radius: 4px;
+      color: #b9d2e4;
+      background: #071f36;
+      cursor: pointer;
+    }
+
+    .factory-tab {
+      min-width: 130px;
+      height: 38px;
+      padding: 0 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .factory-tab:hover,
+    .factory-tab:focus-visible,
+    .more-factories summary:hover,
+    .more-factories summary:focus-visible,
+    .more-factory-option:hover,
+    .more-factory-option:focus-visible {
+      border-color: #56dcff;
+      color: #f5fbff;
+      outline: none;
+    }
+
+    .factory-tab.active {
+      border-color: #56dcff;
+      color: #fff;
+      background: linear-gradient(135deg, #104b7f, #092f55);
+      box-shadow: inset 0 0 0 1px rgba(100, 224, 255, .18), 0 0 12px rgba(25, 146, 220, .18);
+    }
+
+    .factory-tab-name { font-size: 13px; font-weight: 720; }
+    .factory-tab-state { display: inline-flex; align-items: center; gap: 5px; color: var(--risk-color); font-size: 10px; }
+    .factory-tab .risk-dot { width: 6px; height: 6px; }
+
+    .more-factories { position: relative; flex: 0 0 auto; }
+    .more-factories[hidden] { display: none; }
+    .more-factories summary {
+      height: 38px;
+      padding: 0 11px;
+      display: flex;
+      align-items: center;
+      list-style: none;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .more-factories summary::-webkit-details-marker { display: none; }
+    .more-factories summary::after { content: "▾"; margin-left: 7px; color: #57ddff; }
+    .more-factory-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 30;
+      width: 190px;
+      padding: 6px;
+      display: grid;
+      gap: 5px;
+      border: 1px solid #3c83bb;
+      border-radius: 5px;
+      background: #082844;
+      box-shadow: 0 12px 28px rgba(0, 8, 21, .45);
+    }
+
+    .more-factory-option { min-height: 34px; padding: 0 10px; display: flex; align-items: center; justify-content: space-between; }
+
+    .factory-summary {
+      min-width: 700px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #28679f;
+      border-radius: 6px;
+      background: rgba(7, 35, 61, .86);
+    }
+
+    .factory-summary-group { min-width: 0; display: flex; align-items: center; gap: 5px; }
+    .factory-summary-group.production { flex: 1.2; }
+    .factory-summary-group.kpi { flex: 1; }
+    .factory-summary-group-title {
+      flex: 0 0 auto;
+      width: 42px;
+      padding-right: 4px;
+      color: #b9d2e4;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
+    }
+    .factory-summary-items { min-width: 0; flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .factory-summary-group.kpi .factory-summary-items { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .factory-summary-item { min-width: 0; padding: 0 7px; border-left: 1px solid rgba(91, 153, 204, .4); }
+    .factory-summary-item:first-child { border-left: 0; }
+    .factory-summary-item label { display: block; color: #8fb5cf; font-size: 8px; white-space: nowrap; }
+    .factory-summary-item strong { display: block; margin-top: 2px; color: #f5fbff; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .factory-summary-item small { margin-left: 2px; color: #8fb5cf; font-size: 8px; font-weight: 500; }
+    .factory-summary-divider { width: 1px; height: 30px; margin: 0 4px; background: rgba(91, 153, 204, .5); }
+    .kpi-status-dot { display: inline-block; width: 6px; height: 6px; margin-left: 4px; border-radius: 50%; background: var(--kpi-color); box-shadow: 0 0 6px var(--kpi-color); vertical-align: middle; }
+
+    .workspace {
+      position: relative;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(320px, 27vw, 380px);
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .process-section {
+      grid-column: 1;
+      grid-row: 1;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .process-section {
+      position: relative;
+      display: block;
+    }
+
+    .process-section .process-viewport {
+      position: absolute;
+      inset: 0;
+    }
+
+    .process-tools-toggle {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      z-index: 16;
+      width: 30px;
+      height: 28px;
+      border: 1px solid #2b6799;
+      border-radius: 4px;
+      color: #8fb5cf;
+      background: rgba(7, 31, 54, .92);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .process-tools-toggle:hover,
+    .process-tools-toggle:focus-visible,
+    .process-section.tools-open .process-tools-toggle {
+      border-color: #56dcff;
+      color: #fff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(86, 220, 255, .16);
+    }
+
+    .process-toolbar {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 48px;
+      z-index: 15;
+      min-height: 52px;
+      border: 1px solid #28679f;
+      border-radius: 5px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(calc(-100% - 16px));
+      transition: opacity .18s ease, transform .2s ease;
+      box-shadow: 0 10px 22px rgba(0, 8, 21, .34);
+    }
+
+    .process-section.tools-open .process-toolbar,
+    .process-toolbar:focus-within {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .process-section.tools-open .process-viewport { z-index: 1; }
+    .phase-strip { display: none; }
+
+    .detail-panel {
+      position: relative;
+      top: 8px;
+      right: auto;
+      z-index: 20;
+      grid-column: 2;
+      grid-row: 1;
+      width: auto;
+      height: calc(100% - 16px);
+      max-height: none;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #56dcff;
+      border-radius: 7px;
+      background: linear-gradient(145deg, rgba(10, 52, 91, .99), rgba(5, 30, 54, .99));
+      box-shadow: -12px 0 34px rgba(0, 8, 21, .46), inset 0 0 24px rgba(36, 119, 190, .1);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: none;
+      transition: none;
+    }
+
+    .detail-panel.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: none;
+    }
+
+    .detail-header { flex: 0 0 auto; }
+    .detail-header-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .detail-close {
+      min-width: 54px;
+      height: 28px;
+      border: 1px solid #3c83bb;
+      border-radius: 4px;
+      color: #b9d2e4;
+      background: #071f36;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .detail-close:hover,
+    .detail-close:focus-visible { border-color: #56dcff; color: #fff; outline: 2px solid rgba(86, 220, 255, .28); outline-offset: 1px; }
+    .detail-content { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+    .detail-footer { flex: 0 0 auto; }
+
+    .workspace.detail-collapsed {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace.detail-collapsed .detail-panel {
+      display: none;
+    }
+
+    .detail-drawer-trigger {
+      --risk-color: var(--green);
+      position: absolute;
+      top: 50%;
+      right: 0;
+      z-index: 18;
+      width: 38px;
+      min-height: 118px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid var(--risk-color);
+      border-right: 0;
+      border-radius: 7px 0 0 7px;
+      color: #eaf8ff;
+      background: rgba(7, 42, 74, .97);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--risk-color) 30%, transparent);
+      cursor: pointer;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .detail-drawer-trigger span { writing-mode: vertical-rl; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+    .detail-drawer-trigger .risk-dot { width: 7px; height: 7px; color: var(--risk-color); background: var(--risk-color); }
+    .detail-drawer-trigger:hover { background: #0c416f; }
+    .detail-drawer-trigger:focus-visible { outline: 2px solid #56dcff; outline-offset: -3px; }
+    .workspace.detail-open .detail-drawer-trigger { opacity: 0; pointer-events: none; transform: translate(12px, -50%); }
+    .workspace.detail-collapsed .detail-drawer-trigger { opacity: 1; pointer-events: auto; transform: translateY(-50%); }
+
+    .time-panel .time-item:last-child .time-label { display: none; }
+
+    @media (max-width: 1500px) {
+      .factory-overview { grid-template-columns: minmax(250px, 1fr) auto; }
+      .factory-summary { min-width: 680px; }
+      .factory-summary-item { min-width: 88px; padding: 0 8px; }
+      .factory-tab { min-width: 118px; padding: 0 9px; }
+    }
+
+    @media (max-height: 820px) {
+      .app { grid-template-rows: 58px 48px minmax(0, 1fr) 30px; gap: 8px; }
+      .factory-nav-shell { padding-top: 4px; padding-bottom: 4px; }
+      .factory-tab, .more-factories summary { height: 34px; }
+      .factory-summary { padding-top: 3px; padding-bottom: 3px; }
+      .detail-content { max-height: calc(100vh - 258px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flow-edge-stream,
+      .process-node.risk-warning .node-no::after,
+      .process-node.risk-danger .node-no::after,
+      .process-node.progress-active .node-no,
+      .process-node.selected .node-no,
+      .process-node.is-refreshing .node-no,
+      .detail-panel.is-refreshing .detail-title-row h2,
+      .detail-panel.is-refreshing .metric-box strong {
+        animation: none;
+      }
+      .flow-edge-stream { stroke-dasharray: 4 14; opacity: .72; }
+    }
+
+    /* Layered status motion: keep risk legible while limiting continuous movement. */
+    .process-node.progress-completed:not(.risk-warning):not(.risk-danger) .node-no {
+      border-color: rgba(46, 230, 189, .82);
+      box-shadow: 0 0 0 3px rgba(46, 230, 189, .16), 0 0 14px rgba(46, 230, 189, .46), inset 0 0 11px rgba(255,255,255,.4);
+    }
+
+    .process-node.progress-active:not(.risk-danger) .node-no {
+      animation: node-active-breathe 3s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .process-node.progress-pending:not(.risk-warning):not(.risk-danger) {
+      opacity: .68;
+    }
+
+    .process-node.progress-pending:not(.risk-warning):not(.risk-danger) .node-no {
+      border-color: rgba(157, 187, 207, .5);
+      box-shadow: 0 0 8px rgba(95, 141, 174, .28), inset 0 0 8px rgba(255,255,255,.2);
+    }
+
+    .process-node.selected .node-no {
+      animation: node-selected-glow 2.8s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .process-node.is-refreshing .node-no {
+      animation: node-refresh-sweep .7s ease-out 1;
+      transform-origin: center;
+    }
+
+    .process-node.is-refreshing .progress-mark,
+    .detail-panel.is-refreshing .detail-title-row h2,
+    .detail-panel.is-refreshing .metric-box strong {
+      animation: data-refresh-flash .7s ease-out 1;
+    }
+
+    .risk-corner {
+      position: absolute;
+      top: 1px;
+      right: calc(50% - 29px);
+      width: 9px;
+      height: 9px;
+      display: none;
+      border: 1px solid #4a0618;
+      border-radius: 2px;
+      background: #ff3857;
+      box-shadow: 0 0 8px rgba(255, 56, 87, .9);
+      transform: rotate(45deg);
+    }
+
+    .process-node.risk-danger .risk-corner { display: block; }
+
+    .process-node.risk-warning .node-no::after {
+      animation-duration: 2.5s;
+    }
+
+    .flow-edge.edge-warning {
+      stroke: #f4c95d;
+      filter: drop-shadow(0 0 4px rgba(244, 201, 93, .62));
+    }
+
+    .flow-edge-stream.edge-warning {
+      stroke: rgba(255, 216, 104, .9);
+      filter: drop-shadow(0 0 5px rgba(244, 201, 93, .78));
+      animation-duration: 1.6s;
+    }
+
+    .flow-edge.edge-danger {
+      stroke: #ff3857;
+      filter: drop-shadow(0 0 5px rgba(255, 56, 87, .78));
+    }
+
+    .flow-edge-stream.edge-danger {
+      stroke: rgba(255, 92, 111, .94);
+      filter: drop-shadow(0 0 6px rgba(255, 56, 87, .86));
+      animation-duration: 2.2s;
+    }
+
+    .flow-edge.edge-warning.active,
+    .flow-edge.edge-danger.active {
+      stroke-width: 4;
+    }
+
+    .flow-edge-stream.edge-warning.active,
+    .flow-edge-stream.edge-danger.active {
+      stroke-width: 3;
+      stroke-dasharray: 5 13;
+      animation-duration: 1.1s;
+    }
+
+    .flow-edge-stream.edge-danger.active { animation-duration: 1.35s; }
+
+    @keyframes node-active-breathe {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 7px rgba(57, 228, 239, .42)); }
+      50% { transform: scale(1.02); filter: drop-shadow(0 0 13px rgba(57, 228, 239, .72)); }
+    }
+
+    @keyframes node-selected-glow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 7px rgba(116, 233, 255, .56)); }
+      50% { transform: scale(1.018); filter: drop-shadow(0 0 14px rgba(116, 233, 255, .96)); }
+    }
+
+    @keyframes node-refresh-sweep {
+      0% { transform: scale(1); filter: brightness(1); }
+      35% { transform: scale(1.04); filter: brightness(1.55) drop-shadow(0 0 12px rgba(213, 251, 255, .9)); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+    @keyframes data-refresh-flash {
+      0% { opacity: 1; text-shadow: none; }
+      35% { opacity: .72; text-shadow: 0 0 12px currentColor; }
+      100% { opacity: 1; text-shadow: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .process-node.risk-warning .node-no::after,
+      .process-node.risk-danger .node-no::after,
+      .flow-edge-stream,
+      .process-node.progress-active .node-no,
+      .process-node.selected .node-no,
+      .process-node.is-refreshing .node-no,
+      .process-node.is-refreshing .progress-mark,
+      .detail-panel.is-refreshing .detail-title-row h2,
+      .detail-panel.is-refreshing .metric-box strong {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="集团工厂生产管制塔">
+    <header class="topbar">
+      <div class="brand-lockup" aria-label="Matsuoka 与 Hannao 联合品牌">
+        <img class="brand-matsuoka" alt="Matsuoka" src="data:image/png;base64,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">
+        <span class="brand-divider" aria-hidden="true"></span>
+        <img class="brand-hannao" alt="Hannao 汉脑" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDI2cHgiIGhlaWdodD0iNTZweCIgdmlld0JveD0iMCAwIDQyNiA1NiIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj4KICAgIDx0aXRsZT7nvJbnu4Q8L3RpdGxlPgogICAgPGcgaWQ9Iumhtemdoi0xIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4KICAgICAgICA8ZyBpZD0i57yW57uEIiBmaWxsPSIjMDA4RkQ3IiBmaWxsLXJ1bGU9Im5vbnplcm8iPgogICAgICAgICAgICA8cGF0aCBkPSJNMzIxLjUsMTUuNzQgTDMxOS42MSw3LjE2IEwzMjcuOCw3LjE2IEwzMjguNzksMTEuODYgQzMyOS4yMSwxMy43NyAzMzAuMjUsMTQuNTkgMzMxLjkzLDE0LjMxIEwzMzMuMDQsMTQuMzEgTDMzMi4xNiwxOS42MiBMMzI1Ljc0LDE5LjYyIEMzMjMuMzEsMjAuMDMgMzIxLjksMTguNzQgMzIxLjUxLDE1Ljc0IEwzMjEuNSwxNS43NCBaIE0zMTIuOTIsNDguNjUgTDMxNC40Nyw0OC42NSBDMzE1LjYzLDQ4Ljc5IDMxNi40OCw0OC4xMSAzMTcuMDIsNDYuNjEgTDMyMS4xNCwzNy44MiBMMzI4Ljg5LDM3LjgyIEwzMjMuMDUsNTAuMjkgQzMyMS44Myw1My4xNSAzMTkuNjIsNTQuNDQgMzE2LjQyLDU0LjE3IEwzMTEuOTksNTQuMTcgTDMxMi45MSw0OC42NSBMMzEyLjkyLDQ4LjY1IFogTTMxOS4xOCwyOS42NCBMMzE3LjU5LDIxLjg3IEwzMjUuNTYsMjEuODcgTDMyNi40OCwyNi45OCBDMzI2LjQyLDI4LjIxIDMyNy4xNSwyOC42OSAzMjguNjgsMjguNDEgTDMzMC42NywyOC40MSBMMzI5LjcyLDM0LjEzIEwzMjUuNTEsMzQuMTMgQzMyMS4xMywzNC42OCAzMTkuMDIsMzMuMTggMzE5LjE3LDI5LjYzIEwzMTkuMTgsMjkuNjQgWiBNMzM0LjQ2LDEzLjcgTDMzNS41NSw3LjE2IEwzNzAuMSw3LjE2IEwzNjguODEsMTQuOTMgTDM1Mi4wNywzNyBMMzU1Ljg0LDQ3LjYzIEMzNTYsNDguNDUgMzU2LjQ2LDQ4Ljc5IDM1Ny4yMiw0OC42NSBMMzYyLjk4LDQ4LjY1IEwzNjIuMDYsNTQuMTcgTDM1Mi41NCw1NC4xNyBDMzUwLjc3LDU0LjE3IDM0OS42NCw1My40MiAzNDkuMTUsNTEuOTIgTDM0Ni41NCw0NC45NyBMMzQwLjYzLDUyLjUzIEMzMzkuNjksNTMuNzYgMzM4LjExLDU0LjM3IDMzNS44OSw1NC4zNyBMMzI3LjQ3LDU0LjM3IEwzMjguNDYsNDguNDQgTDMzMy4xMSw0OC40NCBDMzMzLjk3LDQ4LjU4IDMzNC43OSw0OC4xIDMzNS41Niw0Ny4wMSBMMzQzLjQ2LDM2Ljc5IEwzMzUuNjUsMTcuMTcgTDM0NC41MSwxNy4xNyBMMzQ5LjIyLDI4LjgyIEwzNjAuNiwxMy43IEwzMzQuNDcsMTMuNyBMMzM0LjQ2LDEzLjcgWiIgaWQ9IuW9oueKtiI+PC9wYXRoPgogICAgICAgICAgICA8cGF0aCBkPSJNMzcxLjEyLDQ3LjYyIEwzNzcuODIsNy4zNiBMMzk3LjA5LDcuMzYgTDM5MC4xNSw0OS4wNSBDMzg5LjcxLDUyLjU5IDM4Ny45Niw1NC4yMyAzODQuOSw1My45NiBMMzc5LjgxLDUzLjk2IEwzODAuNjksNDguNjUgTDM4MS44LDQ4LjY1IEMzODIuMzcsNDguNzkgMzgyLjcyLDQ4LjQ1IDM4Mi44Niw0Ny42MyBMMzg0LjQyLDM4LjIzIEwzODAuNDMsMzguMjMgTDM3OC41Niw0OS40NyBDMzc4LjE4LDUyLjYgMzc2LjUzLDU0LjEgMzczLjYsNTMuOTcgTDM2OC4yOCw1My45NyBMMzY5LjE2LDQ4LjY2IEwzNzAuMjcsNDguNjYgQzM3MC42OSw0OC44IDM3MC45Nyw0OC40NiAzNzEuMSw0Ny42NCBMMzcxLjEyLDQ3LjYyIFogTTM4Ny4zMSwyMC44NSBMMzg4LjQsMTQuMzEgTDM4NC40MSwxNC4zMSBMMzgzLjMyLDIwLjg1IEwzODcuMzEsMjAuODUgWiBNMzgxLjMyLDMyLjkxIEwzODUuMzEsMzIuOTEgTDM4Ni40LDI2LjM3IEwzODIuNDEsMjYuMzcgTDM4MS4zMiwzMi45MSBaIE0zOTcuNzksMTUuMTMgTDM5OC44NCw4Ljc5IEw0MDcuMjYsOC43OSBMNDA3LjUzLDcuMTUgTDQxNS45NSw3LjE1IEw0MTUuNjgsOC43OSBMNDI1LjY1LDguNzkgTDQyNC42LDE1LjEzIEwzOTcuOCwxNS4xMyBMMzk3Ljc5LDE1LjEzIFogTTQxNy41MiwxOS4wMSBMNDExLjA3LDMyLjUgTDQxMy40OSw0NC41NiBMNDE3LjkxLDE3Ljk5IEw0MjQuMzMsMTcuOTkgTDQxOS4xNiw0OS4wNiBDNDE4LjkyLDUzLjE1IDQxNi42Miw1NC45OSA0MTIuMjYsNTQuNTggTDM5MS4yMiw1NC41OCBMMzk3LjM0LDE3Ljc5IEw0MDMuNTQsMTcuNzkgTDQwMy40LDE4LjYxIEw0MDguMjcsMTguNjEgTDQwOS4xMSwyNS41NiBMNDExLjk3LDE5LjAyIEw0MTcuNTEsMTkuMDIgTDQxNy41MiwxOS4wMSBaIE0zOTkuMDYsNDQuNzYgTDQwNS4wMiwzMi45MSBMNDAzLjA0LDIwLjg1IEwzOTkuMDYsNDQuNzYgTDM5OS4wNiw0NC43NiBaIE00MDguMzEsNDYuNCBMNDA3LjA2LDM5LjI1IEw0MDMuNjksNDYuMiBMMzk4LjgyLDQ2LjIgTDM5OC4zOCw0OC44NiBMNDExLjY3LDQ4Ljg2IEM0MTIuMzgsNDkgNDEyLjgsNDguNzMgNDEyLjkxLDQ4LjA0IEw0MTMuMTgsNDYuNDEgTDQwOC4zMSw0Ni40MSBMNDA4LjMxLDQ2LjQgWiIgaWQ9IuW9oueKtiI+PC9wYXRoPgogICAgICAgICAgICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTgsIC0xMykiPgogICAgICAgICAgICAgICAgPHBvbHlnb24gaWQ9Iui3r+W+hCIgcG9pbnRzPSI3Mi4zIDEzLjk0IDYzLjM3IDY3LjYzIDQ5Ljk5IDY3LjYzIDUzLjY4IDQ1LjQ5IDM1LjUyIDQ1LjQ5IDMxLjgzIDY3LjYzIDE4LjQ1IDY3LjYzIDI3LjM4IDEzLjk0IDQwLjc2IDEzLjk0IDM3LjI4IDM0Ljg2IDU1LjQ0IDM0Ljg2IDU4LjkyIDEzLjk0Ij48L3BvbHlnb24+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTEyLDY3LjYzIEw5OS42OCw2Ny42MyBDOTkuNTQsNjYuMDYgOTkuNjgsNjMuOTkgMTAwLjEyLDYxLjQyIEM5Ny40OSw2NC4yNSA5NS4wMyw2Ni4xMyA5Mi43Myw2Ny4wNiBDOTAuNDMsNjcuOTkgODcuOTIsNjguNDYgODUuMiw2OC40NiBDODEuMTcsNjguNDYgNzguMDgsNjcuNDUgNzUuOTQsNjUuNDMgQzczLjc5LDYzLjQxIDczLDYwLjcgNzMuNTcsNTcuMjkgQzczLjk4LDU0LjggNzUuMDksNTIuNTEgNzYuODksNTAuNDEgQzc4LjY5LDQ4LjMxIDgxLjI5LDQ2LjY3IDg0LjY5LDQ1LjQ3IEM4OC4wOSw0NC4yOCA5NC4wOSw0My4zOSAxMDIuNjYsNDIuODIgTDEwMy4wNCw0MC41NCBDMTAzLjY4LDM2LjY5IDEwMS45MiwzNC43NiA5Ny43NiwzNC43NiBDOTMuMzEsMzQuNzYgOTAuNTEsMzYuNjkgODkuMzYsNDAuNTQgTDc3LjgxLDM5LjUyIEM3OS4zMywzNS4wMSA4Mi4xOCwzMS44MSA4Ni4zNSwyOS45MiBDOTAuNTMsMjguMDMgOTUuMDYsMjcuMDkgOTkuOTUsMjcuMDkgQzEwMi44OCwyNy4wOSAxMDUuNTgsMjcuNCAxMDguMDYsMjguMDMgQzExMC41NCwyOC42NiAxMTIuNCwyOS42IDExMy42NCwzMC44NiBDMTE0Ljg4LDMyLjEyIDExNS42NCwzMy40NSAxMTUuOTIsMzQuODUgQzExNi4yLDM2LjI1IDExNi4wNSwzOC43IDExNS40Nyw0Mi4xOSBMMTEyLjQ3LDYwLjIgQzExMS44OSw2My42NiAxMTEuNzQsNjYuMTQgMTEyLDY3LjYzIEwxMTIsNjcuNjMgWiBNMTAxLjcsNDguNTkgQzkyLjcsNDkuNCA4Ny44NSw1MS44OCA4Ny4xNyw1Ni4wMiBDODYuOTQsNTcuNDEgODcuMjEsNTguNjEgODcuOTcsNTkuNjIgQzg4Ljc0LDYwLjYzIDg5Ljk4LDYxLjEzIDkxLjcxLDYxLjEzIEM5My45NSw2MS4xMyA5NS45Nyw2MC4yNyA5Ny43Nyw1OC41NSBDOTkuNTcsNTYuODMgMTAwLjY4LDU0LjcyIDEwMS4xLDUyLjIgTDEwMS43LDQ4LjU4IEwxMDEuNyw0OC41OSBaIiBpZD0i5b2i54q2Ij48L3BhdGg+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTU5LjEzLDY3LjYzIEwxNDYuNDMsNjcuNjMgTDE1MC4xNCw0NS4zMyBDMTUwLjU5LDQyLjYzIDE1MC43OCw0MC43OCAxNTAuNzIsMzkuNzggQzE1MC42NiwzOC43OCAxNTAuMjQsMzcuOTQgMTQ5LjQ4LDM3LjI0IEMxNDguNzEsMzYuNTUgMTQ3LjY2LDM2LjIgMTQ2LjMzLDM2LjIgQzE0MS44NywzNi4yIDEzOS4xMywzOS4yNCAxMzguMTIsNDUuMzIgTDEzNC40MSw2Ny42MiBMMTIxLjcxLDY3LjYyIEwxMjguMzIsMjcuOSBMMTQwLjEzLDI3LjkgTDEzOS4wMSwzNC42MyBDMTQxLjUsMzEuNDMgMTQzLjc4LDI5LjM3IDE0NS44MywyOC40NiBDMTQ3Ljg5LDI3LjU0IDE1MC4wMiwyNy4wOCAxNTIuMjQsMjcuMDggQzE1Ni4zMywyNy4wOCAxNTkuNDYsMjguMSAxNjEuNjIsMzAuMTMgQzE2My43OCwzMi4xNiAxNjQuMzcsMzYuMTUgMTYzLjM4LDQyLjExIEwxNTkuMTMsNjcuNjQgTDE1OS4xMyw2Ny42MyBaIiBpZD0i6Lev5b6EIj48L3BhdGg+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMjA3LjA0LDY3LjYzIEwxOTQuMzQsNjcuNjMgTDE5OC4wNSw0NS4zMyBDMTk4LjUsNDIuNjMgMTk4LjY5LDQwLjc4IDE5OC42MywzOS43OCBDMTk4LjU3LDM4Ljc4IDE5OC4xNSwzNy45NCAxOTcuMzksMzcuMjQgQzE5Ni42MiwzNi41NSAxOTUuNTcsMzYuMiAxOTQuMjQsMzYuMiBDMTg5Ljc4LDM2LjIgMTg3LjA0LDM5LjI0IDE4Ni4wMyw0NS4zMiBMMTgyLjMyLDY3LjYyIEwxNjkuNjIsNjcuNjIgTDE3Ni4yMywyNy45IEwxODguMDQsMjcuOSBMMTg2LjkyLDM0LjYzIEMxODkuNDEsMzEuNDMgMTkxLjY5LDI5LjM3IDE5My43NCwyOC40NiBDMTk1LjgsMjcuNTQgMTk3LjkzLDI3LjA4IDIwMC4xNSwyNy4wOCBDMjA0LjI0LDI3LjA4IDIwNy4zNywyOC4xIDIwOS41MywzMC4xMyBDMjExLjY5LDMyLjE2IDIxMi4yOCwzNi4xNSAyMTEuMjksNDIuMTEgTDIwNy4wNCw2Ny42NCBMMjA3LjA0LDY3LjYzIFoiIGlkPSLot6/lvoQiPjwvcGF0aD4KICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0yNTUuMDcsNjcuNjMgTDI0Mi43NSw2Ny42MyBDMjQyLjYxLDY2LjA2IDI0Mi43NSw2My45OSAyNDMuMTksNjEuNDIgQzI0MC41Niw2NC4yNSAyMzguMSw2Ni4xMyAyMzUuOCw2Ny4wNiBDMjMzLjUsNjcuOTkgMjMwLjk5LDY4LjQ2IDIyOC4yNyw2OC40NiBDMjI0LjI0LDY4LjQ2IDIyMS4xNSw2Ny40NSAyMTkuMDEsNjUuNDMgQzIxNi44Niw2My40MSAyMTYuMDcsNjAuNyAyMTYuNjQsNTcuMjkgQzIxNy4wNSw1NC44IDIxOC4xNiw1Mi41MSAyMTkuOTYsNTAuNDEgQzIyMS43Niw0OC4zMSAyMjQuMzYsNDYuNjcgMjI3Ljc2LDQ1LjQ3IEMyMzEuMTYsNDQuMjggMjM3LjE2LDQzLjM5IDI0NS43Myw0Mi44MiBMMjQ2LjExLDQwLjU0IEMyNDYuNzUsMzYuNjkgMjQ0Ljk5LDM0Ljc2IDI0MC44MywzNC43NiBDMjM2LjM4LDM0Ljc2IDIzMy41OCwzNi42OSAyMzIuNDMsNDAuNTQgTDIyMC44OCwzOS41MiBDMjIyLjQsMzUuMDEgMjI1LjI1LDMxLjgxIDIyOS40MiwyOS45MiBDMjMzLjYsMjguMDMgMjM4LjEzLDI3LjA5IDI0My4wMiwyNy4wOSBDMjQ1Ljk1LDI3LjA5IDI0OC42NSwyNy40IDI1MS4xMywyOC4wMyBDMjUzLjYxLDI4LjY2IDI1NS40NywyOS42IDI1Ni43MSwzMC44NiBDMjU3Ljk1LDMyLjEyIDI1OC43MSwzMy40NSAyNTguOTksMzQuODUgQzI1OS4yNywzNi4yNSAyNTkuMTIsMzguNyAyNTguNTQsNDIuMTkgTDI1NS41NCw2MC4yIEMyNTQuOTYsNjMuNjYgMjU0LjgxLDY2LjE0IDI1NS4wNyw2Ny42MyBMMjU1LjA3LDY3LjYzIFogTTI0NC43Nyw0OC41OSBDMjM1Ljc3LDQ5LjQgMjMwLjkzLDUxLjg4IDIzMC4yNCw1Ni4wMiBDMjMwLjAxLDU3LjQxIDIzMC4yOCw1OC42MSAyMzEuMDQsNTkuNjIgQzIzMS44MSw2MC42MyAyMzMuMDUsNjEuMTMgMjM0Ljc4LDYxLjEzIEMyMzcuMDIsNjEuMTMgMjM5LjA0LDYwLjI3IDI0MC44NCw1OC41NSBDMjQyLjY0LDU2LjgzIDI0My43NSw1NC43MiAyNDQuMTcsNTIuMiBMMjQ0Ljc3LDQ4LjU4IEwyNDQuNzcsNDguNTkgWiIgaWQ9IuW9oueKtiI+PC9wYXRoPgogICAgICAgICAgICAgICAgPHBhdGggZD0iTTI4OS4zNywyNy4wOCBDMjk1LjkzLDI3LjA4IDMwMC43MSwyOS4wNiAzMDMuNzMsMzMuMDIgQzMwNi43NSwzNi45OCAzMDcuNzYsNDEuOTMgMzA2Ljc3LDQ3Ljg5IEMzMDUuNzksNTMuNzYgMzAzLjA3LDU4LjY2IDI5OC42LDYyLjU4IEMyOTQuMTMsNjYuNSAyODguNzMsNjguNDYgMjgyLjQsNjguNDYgQzI3Ni4wNyw2OC40NiAyNzEuNjksNjYuNTIgMjY4LjY2LDYyLjY0IEMyNjUuNjMsNTguNzYgMjY0LjYyLDUzLjc4IDI2NS42Myw0Ny42OSBDMjY2LjMzLDQzLjQ3IDI2Ny43NiwzOS44OCAyNjkuOTEsMzYuOTMgQzI3Mi4wNiwzMy45OCAyNzQuNzMsMzEuNiAyNzcuOTMsMjkuNzkgQzI4MS4xMywyNy45OCAyODQuOTQsMjcuMDggMjg5LjM3LDI3LjA4IFogTTI4OC40MywzNC43NSBDMjg2LjAyLDM0Ljc1IDI4NC4wNywzNS42MSAyODIuNTYsMzcuMzMgQzI4MS4wNiwzOS4wNSAyNzkuODgsNDIuNDYgMjc5LjAzLDQ3LjU4IEMyNzguMjUsNTIuMjcgMjc4LjI3LDU1LjY0IDI3OS4wOSw1Ny42OSBDMjc5LjkxLDU5Ljc0IDI4MS41NSw2MC43NiAyODQuMDIsNjAuNzYgQzI4Ni4xNyw2MC43NiAyODguMDYsNTkuODkgMjg5LjY4LDU4LjE0IEMyOTEuMyw1Ni40IDI5Mi41Miw1My4wNyAyOTMuMzQsNDguMTcgQzI5NC4yMSw0Mi45NSAyOTQuMjEsMzkuNDEgMjkzLjM0LDM3LjU1IEMyOTIuNDcsMzUuNjkgMjkwLjg0LDM0Ljc2IDI4OC40MywzNC43NiBMMjg4LjQzLDM0Ljc1IFoiIGlkPSLlvaLnirYiPjwvcGF0aD4KICAgICAgICAgICAgPC9nPgogICAgICAgICAgICA8cG9seWdvbiBpZD0i6Lev5b6EIiBwb2ludHM9IjQwNy41MyA3LjE1IDQwNy4yNiA4Ljc5IDQxNS42OCA4Ljc5IDQxNS45NSA3LjE1Ij48L3BvbHlnb24+CiAgICAgICAgPC9nPgogICAgPC9nPgo8L3N2Zz4=">
+      </div>
+      <div class="title-block">
+        <h1>集团工厂生产管制塔</h1>
+        <div class="title-meta">
+          <span class="demo-tag">演示数据</span>
+          <span>双工厂 · 全流程状态 · 实时数据</span>
+        </div>
+      </div>
+      <div class="time-panel">
+        <div class="time-item">
+          <div class="time-label">数据口径</div>
+          <div class="time-value">实时生产状态</div>
+        </div>
+        <div class="time-item">
+          <div class="time-value clock" id="currentTime">--:--:--</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="factory-overview" aria-label="工厂导航与实时指标">
+      <div class="factory-nav-shell">
+        <div class="factory-tabs" id="factoryCards" role="tablist" aria-label="切换工厂"></div>
+        <details class="more-factories" id="moreFactories">
+          <summary>更多工厂</summary>
+          <div class="more-factory-menu" id="moreFactoryMenu"></div>
+        </details>
+      </div>
+      <div class="factory-summary" id="factorySummary" aria-live="polite"></div>
+    </section>
+
+    <section class="workspace">
+      <section class="process-section" aria-labelledby="processTitle">
+        <button class="process-tools-toggle" id="processToolsToggle" type="button" aria-expanded="false" aria-controls="processToolbar" title="展开流程工具" aria-label="展开流程工具">⋯</button>
+        <div class="process-toolbar" id="processToolbar">
+          <div class="active-factory">
+            <strong id="processTitle">IBMD 工厂 · 38 节点流程</strong>
+            <span id="processSubTitle">风险优先 · 实时生产状态</span>
+          </div>
+          <div class="toolbar-spacer"></div>
+          <div class="search-wrap">
+            <span class="search-mark" aria-hidden="true">⌕</span>
+            <input id="nodeSearch" type="search" placeholder="搜索流程节点" aria-label="搜索流程节点">
+          </div>
+          <select id="phaseFilter" aria-label="按流程阶段筛选">
+            <option value="all">全部阶段</option>
+            <option value="order-material">订单与物料</option>
+            <option value="cutting-prep">裁剪准备</option>
+            <option value="cut-piece">裁片处理</option>
+            <option value="sewing">车缝</option>
+            <option value="quality">质量检查</option>
+            <option value="finishing">后道</option>
+            <option value="shipping">入库与出货</option>
+          </select>
+          <select id="riskFilter" aria-label="按风险状态筛选">
+            <option value="all">全部风险</option>
+            <option value="danger">异常</option>
+            <option value="warning">注意</option>
+            <option value="normal">正常</option>
+          </select>
+          <div class="zoom-controls" aria-label="画布缩放控制">
+            <button class="icon-button" id="zoomOut" type="button" title="缩小" aria-label="缩小">−</button>
+            <button class="icon-button" id="resetView" type="button" title="重置视图" aria-label="重置视图">↺</button>
+            <button class="icon-button" id="zoomIn" type="button" title="放大" aria-label="放大">+</button>
+          </div>
+        </div>
+        <div class="process-viewport" id="processViewport">
+          <div class="flow-content" id="flowContent">
+            <svg id="edgeLayer" aria-hidden="true"></svg>
+            <div class="node-layer" id="nodeLayer"></div>
+            <section class="center-insight" aria-label="实时生产摘要">
+              <div class="shift-summary">
+                <div class="center-title"><strong>实时生产摘要</strong><span id="summaryTime">更新于 --:--</span></div>
+                <div class="summary-grid" id="summaryGrid"></div>
+              </div>
+              <div class="alert-summary">
+                <div class="center-title"><strong>重点异常</strong><span>按风险等级排序</span></div>
+                <div class="alert-list" id="alertList"></div>
+              </div>
+            </section>
+            <div class="empty-result" id="emptyResult">
+              <strong>未找到匹配节点</strong>
+              <span>请调整搜索词或筛选条件</span>
+            </div>
+            <div class="legend" aria-label="状态图例">
+              <span class="legend-item"><i class="legend-bar" style="--legend-color:var(--green)"></i>已完成</span>
+              <span class="legend-item"><i class="legend-bar" style="--legend-color:var(--cyan)"></i>进行中</span>
+              <span class="legend-item"><i class="legend-bar" style="--legend-color:#46545c"></i>未开始</span>
+              <span class="legend-item"><i class="legend-dot" style="--legend-color:var(--green)"></i>正常</span>
+              <span class="legend-item"><i class="legend-dot" style="--legend-color:var(--yellow)"></i>注意</span>
+              <span class="legend-item"><i class="legend-dot" style="--legend-color:var(--red)"></i>异常</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <button class="detail-drawer-trigger" id="detailDrawerTrigger" type="button" aria-controls="detailPanel" aria-expanded="false" title="展开节点详情">
+        <i class="risk-dot" aria-hidden="true"></i>
+        <span>节点详情</span>
+      </button>
+      <aside class="detail-panel" id="detailPanel" aria-live="polite" aria-label="节点详情" aria-hidden="true">
+        <div class="detail-header">
+          <div class="detail-header-topline">
+            <div class="detail-eyebrow">流程节点详情</div>
+            <button class="detail-close" id="detailClose" type="button" title="收起节点详情" aria-label="收起节点详情">收起</button>
+          </div>
+          <div class="detail-title-row">
+            <h2 id="detailTitle" tabindex="-1">订单接收</h2>
+            <span class="detail-index" id="detailIndex">01 / 38</span>
+          </div>
+          <div class="status-row" id="detailStatus"></div>
+        </div>
+        <div class="detail-content" id="detailContent"></div>
+        <div class="detail-footer">
+          <span class="data-source">ERP / MES 演示数据</span>
+          <span id="detailUpdated">更新于 --:--</span>
+        </div>
+      </aside>
+    </section>
+    <footer class="alert-ticker" aria-live="polite">
+      <span class="ticker-label">告警播报</span>
+      <span class="ticker-text" id="tickerText">正在读取当前工厂重点异常...</span>
+      <span class="ticker-time" id="tickerTime">--:--</span>
+    </footer>
+  </main>
+
+  <script>
+    const riskMeta = {
+      normal: { label: "正常", color: "#54d49a", weight: 1 },
+      warning: { label: "注意", color: "#f4c95d", weight: 2 },
+      danger: { label: "异常", color: "#ff6b72", weight: 3 }
+    };
+
+    const progressMeta = {
+      completed: { label: "已完成", color: "#54d49a" },
+      active: { label: "进行中", color: "#18b8d8" },
+      pending: { label: "未开始", color: "#6f7e86" }
+    };
+
+    const roleMeta = {
+      warehouse: { name: "仓储", color: "#4d8fe8" },
+      quality: { name: "质量", color: "#f4c95d" },
+      planning: { name: "生产计划", color: "#18b8d8" },
+      cutting: { name: "裁剪", color: "#49b6a6" },
+      sewing: { name: "车缝", color: "#54d49a" },
+      finishing: { name: "后道", color: "#a389e8" },
+      management: { name: "运营管理", color: "#b0bec5" }
+    };
+
+    const baseNodes = [
+      { id:"n01", no:1, label:"订单接收", phase:"order-material", role:"planning", description:"接收客户或总部订单，建立工厂生产执行范围。", input:"客户订单", output:"生产订单", rules:["订单号必须唯一","订单数量、交期和款式信息完整"], metricLabel:"订单完成", target:100 },
+      { id:"n02", no:2, label:"面料接收入库", phase:"order-material", role:"warehouse", description:"接收面料到货并完成数量、批次和待检区登记。", input:"面料到货单", output:"面料待检批次", rules:["到货数量与采购单一致","未检面料不得投入裁剪"], metricLabel:"接收完成", target:1240 },
+      { id:"n03", no:3, label:"辅料接收入库", phase:"order-material", role:"warehouse", description:"接收辅料到货并按订单、批次和库位进行登记。", input:"辅料到货单", output:"辅料待检批次", rules:["辅料批次必须可追溯","缺料需关联受影响订单"], metricLabel:"接收完成", target:1180 },
+      { id:"n04", no:4, label:"面辅检验", phase:"order-material", role:"quality", description:"对面料和辅料执行数量、外观及基础质量检验。", input:"面辅待检批次", output:"检验结果", rules:["不合格批次进入隔离区","检验结论必须关联批次"], metricLabel:"检验完成", target:1160 },
+      { id:"n05", no:5, label:"裁剪计划", phase:"cutting-prep", role:"planning", description:"依据订单交期、物料齐套和产能安排裁剪任务。", input:"生产订单与物料状态", output:"裁剪任务", rules:["缺料订单不得下达","计划需明确款式和批次"], metricLabel:"计划达成", target:1080 },
+      { id:"n06", no:6, label:"松布", phase:"cutting-prep", role:"cutting", description:"按面料工艺要求完成松布并记录作业时间。", input:"裁剪任务", output:"松布面料", rules:["松布时长符合工艺要求","异常面料暂停流转"], metricLabel:"准备完成", target:1040 },
+      { id:"n07", no:7, label:"拉布", phase:"cutting-prep", role:"cutting", description:"按排料要求完成面料铺层，为裁剪作业准备。", input:"松布面料", output:"铺布层", rules:["铺布层数与排料计划一致","布面方向和对边需确认"], metricLabel:"铺布完成", target:1020 },
+      { id:"n08", no:8, label:"裁剪", phase:"cutting-prep", role:"cutting", description:"依据裁剪计划完成铺布裁切和数量登记。", input:"铺布层", output:"裁片批次", rules:["裁片数量与排料计划核对","异常损耗需登记原因"], metricLabel:"裁剪完成", target:1000 },
+      { id:"n09", no:9, label:"编码", phase:"cut-piece", role:"cutting", description:"为裁片绑定款式、尺码、批次和流转编码。", input:"裁片批次", output:"已编码裁片", rules:["编码不得重复","编码必须可关联订单和批次"], metricLabel:"编码完成", target:980 },
+      { id:"n10", no:10, label:"验片", phase:"cut-piece", role:"quality", description:"核对裁片外观、数量、尺码和配套关系。", input:"已编码裁片", output:"合格裁片", rules:["缺片、错片及时隔离","验片结果需记录缺陷类型"], metricLabel:"验片合格", target:960 },
+      { id:"n11", no:11, label:"小包", phase:"cut-piece", role:"cutting", description:"按工艺将配套裁片整理为小包并完成标识。", input:"合格裁片", output:"裁片小包", rules:["小包需按工序和尺码配套","包标识随批次流转"], metricLabel:"小包完成", target:940 },
+      { id:"n12", no:12, label:"粘衬", phase:"cut-piece", role:"cutting", description:"按工艺要求完成粘衬，并记录批次和作业结果。", input:"裁片小包", output:"粘衬裁片", rules:["温度、压力和时间符合工艺","粘衬异常需返工或隔离"], metricLabel:"粘衬完成", target:920 },
+      { id:"n13", no:13, label:"裁片入库", phase:"cut-piece", role:"warehouse", description:"将合格裁片按款式、尺码和批次存入裁片库。", input:"粘衬裁片", output:"裁片库存", rules:["批次标识完整","账面数量与实物一致"], metricLabel:"入库完成", target:900 },
+      { id:"n14", no:14, label:"裁片出库", phase:"cut-piece", role:"warehouse", description:"依据车缝计划拣配裁片并完成出库登记。", input:"裁片库存", output:"车缝备料", rules:["出库数量按工单核对","缺片必须在投产前反馈"], metricLabel:"出库完成", target:880 },
+      { id:"n15", no:15, label:"裁片交接", phase:"cut-piece", role:"warehouse", description:"将裁片和配套物料交接至车缝区域并完成确认。", input:"车缝备料", output:"产线待投料", rules:["交接双方确认数量","差异需现场复核并留痕"], metricLabel:"交接完成", target:860 },
+      { id:"n16", no:16, label:"车缝计划", phase:"sewing", role:"planning", description:"按产线能力、订单交期和备料状态安排车缝任务。", input:"工单与车缝备料", output:"车缝排程", rules:["优先处理交期风险订单","排程变更需保留记录"], metricLabel:"计划达成", target:840 },
+      { id:"n17", no:17, label:"线外工序", phase:"sewing", role:"sewing", description:"完成印花、绣花或其他线外加工并返回主流程。", input:"线外任务", output:"合格半成品", rules:["外协批次可追溯","逾期需触发预警"], metricLabel:"完成数量", target:820 },
+      { id:"n18", no:18, label:"PartLine 车缝", phase:"sewing", role:"sewing", description:"在部件线上完成衣片组合前的分部件车缝。", input:"车缝备料", output:"部件半成品", rules:["按标准节拍报工","停线超过阈值触发告警"], metricLabel:"完成数量", target:800 },
+      { id:"n19", no:19, label:"Part QC", phase:"quality", role:"quality", description:"对 PartLine 产出执行部件质量检查和不良分类。", input:"部件半成品", output:"合格部件", rules:["不良需关联原因代码","返工品必须重新检验"], metricLabel:"检验合格", target:780 },
+      { id:"n20", no:20, label:"HangerLine 上裁", phase:"sewing", role:"sewing", description:"将合格部件按吊挂线工位顺序完成上裁和投料。", input:"合格部件", output:"吊挂线待生产", rules:["按工位顺序齐套","缺件不得投线"], metricLabel:"上裁完成", target:760 },
+      { id:"n21", no:21, label:"HangerLine 车缝", phase:"sewing", role:"sewing", description:"吊挂线按工序路径完成整件服装车缝。", input:"吊挂线待生产", output:"车缝成衣", rules:["按工位实时采集产量","在制品拥堵触发预警"], metricLabel:"完成数量", target:740 },
+      { id:"n22", no:22, label:"HangerQC", phase:"quality", role:"quality", description:"对吊挂线成衣执行首段过程质量检查和返工判定。", input:"车缝成衣", output:"HangerQC 结果", rules:["重大缺陷立即反馈产线","返工必须闭环复检"], metricLabel:"一次合格", target:720 },
+      { id:"n23", no:23, label:"In SideQC", phase:"quality", role:"quality", description:"执行服装内侧工艺和外观质量检查。", input:"HangerQC 合格品", output:"内侧检验结果", rules:["关键部位按检验标准检查","不合格品需隔离"], metricLabel:"检验合格", target:700 },
+      { id:"n24", no:24, label:"Top SideQC", phase:"quality", role:"quality", description:"执行服装外侧和重点外观部位质量检查。", input:"内侧检验合格品", output:"后道待接收品", rules:["外观缺陷需分类记录","合格品方可进入后道"], metricLabel:"检验合格", target:680 },
+      { id:"n25", no:25, label:"后道收包", phase:"finishing", role:"finishing", description:"接收车缝合格品并按订单、尺码和批次收包。", input:"后道待接收品", output:"后道在制品", rules:["交接数量双方确认","差异需现场复核"], metricLabel:"收包完成", target:660 },
+      { id:"n26", no:26, label:"水洗", phase:"finishing", role:"finishing", description:"按订单工艺要求完成成衣水洗和批次记录。", input:"后道在制品", output:"水洗成衣", rules:["水洗工艺按款式执行","异常批次需隔离"], metricLabel:"水洗完成", target:640 },
+      { id:"n27", no:27, label:"修线头", phase:"finishing", role:"finishing", description:"处理成衣线头和外观细节，完成后道整理。", input:"水洗成衣", output:"整洁成衣", rules:["线头处理符合外观标准","异常需返回修整"], metricLabel:"修整完成", target:620 },
+      { id:"n28", no:28, label:"钉扣", phase:"finishing", role:"finishing", description:"按工艺完成纽扣、扣件或相关辅料安装。", input:"整洁成衣", output:"钉扣成衣", rules:["扣件规格与款式一致","安装牢固度需抽检"], metricLabel:"钉扣完成", target:600 },
+      { id:"n29", no:29, label:"后道 QC1", phase:"quality", role:"quality", description:"对后道初加工结果进行质量检查和返工判定。", input:"钉扣成衣", output:"QC1 结果", rules:["异常需关联工艺环节","返工后重新检验"], metricLabel:"检验合格", target:580 },
+      { id:"n30", no:30, label:"整烫", phase:"finishing", role:"finishing", description:"按产品工艺完成整烫与外观定型。", input:"QC1 合格品", output:"整烫成衣", rules:["温度与时间符合工艺","外观异常返回处理"], metricLabel:"整烫完成", target:560 },
+      { id:"n31", no:31, label:"后道 QC2", phase:"quality", role:"quality", description:"对整烫后的成衣执行后道终检。", input:"整烫成衣", output:"后道终检结果", rules:["不合格品不得进入包装","终检结果关联订单和批次"], metricLabel:"终检合格", target:540 },
+      { id:"n32", no:32, label:"吊牌", phase:"finishing", role:"finishing", description:"按订单和款式完成吊牌、洗标等标识安装。", input:"后道终检合格品", output:"带标识成衣", rules:["吊牌内容与订单一致","错标必须隔离处理"], metricLabel:"吊牌完成", target:520 },
+      { id:"n33", no:33, label:"干燥", phase:"finishing", role:"finishing", description:"完成成衣干燥并确认包装前状态。", input:"带标识成衣", output:"干燥成衣", rules:["成衣达到包装干燥要求","异常湿度需复处理"], metricLabel:"干燥完成", target:500 },
+      { id:"n34", no:34, label:"PE 袋", phase:"finishing", role:"finishing", description:"按款式和包装要求完成 PE 袋包装。", input:"干燥成衣", output:"袋装成衣", rules:["包装规格与订单一致","包装数量按箱规核对"], metricLabel:"包装完成", target:480 },
+      { id:"n35", no:35, label:"检针", phase:"quality", role:"quality", description:"对包装前或包装后成衣执行检针和安全确认。", input:"袋装成衣", output:"检针结果", rules:["检针异常立即隔离","检针记录需关联批次"], metricLabel:"检针合格", target:460 },
+      { id:"n36", no:36, label:"装箱", phase:"shipping", role:"warehouse", description:"按订单、尺码和箱规完成装箱与箱唛确认。", input:"检针合格品", output:"成品箱", rules:["箱内数量与装箱单一致","箱唛信息必须准确"], metricLabel:"装箱完成", target:440 },
+      { id:"n37", no:37, label:"成品入库", phase:"shipping", role:"warehouse", description:"将装箱成品按订单和库位完成成品入库。", input:"成品箱", output:"成品库存", rules:["入库数量与装箱单一致","库存状态可追溯"], metricLabel:"入库完成", target:420 },
+      { id:"n38", no:38, label:"成品出库", phase:"shipping", role:"warehouse", description:"根据出货计划完成成品出库和交付登记。", input:"成品库存", output:"出货记录", rules:["出库数量与出货单一致","出货完成后关闭订单交付节点"], metricLabel:"出库完成", target:400 }
+    ];
+
+    const tcNodes = [
+      { id:"n01", no:1, label:"订单接收", phase:"order-material", role:"planning", description:"接收 TC 工厂生产订单，建立本次生产执行范围。", input:"客户订单", output:"生产订单", rules:["订单号必须唯一","订单数量、交期和款式信息完整"], metricLabel:"订单完成", target:100 },
+      { id:"n02", no:2, label:"面料接收", phase:"order-material", role:"warehouse", description:"接收面料到货并完成数量、批次和待检登记。", input:"面料到货单", output:"面料待检批次", rules:["到货数量与采购单一致","未检面料不得投入裁剪"], metricLabel:"接收完成", target:1240 },
+      { id:"n03", no:3, label:"辅料接收入库", phase:"order-material", role:"warehouse", description:"接收辅料并按订单、批次和库位完成入库登记。", input:"辅料到货单", output:"辅料待检批次", rules:["辅料批次必须可追溯","缺料需关联受影响订单"], metricLabel:"接收完成", target:1180 },
+      { id:"n04", no:4, label:"面辅检验", phase:"order-material", role:"quality", description:"对面料和辅料执行数量、外观及基础质量检验。", input:"面辅待检批次", output:"检验结果", rules:["不合格批次进入隔离区","检验结论必须关联批次"], metricLabel:"检验完成", target:1160 },
+      { id:"n05", no:5, label:"裁剪计划", phase:"cutting-prep", role:"planning", description:"依据订单交期、物料齐套和产能安排裁剪任务。", input:"生产订单与物料状态", output:"裁剪任务", rules:["缺料订单不得下达","计划需明确款式和批次"], metricLabel:"计划达成", target:1080 },
+      { id:"n06", no:6, label:"松布", phase:"cutting-prep", role:"cutting", description:"按面料工艺要求完成松布并记录作业时间。", input:"裁剪任务", output:"松布面料", rules:["松布时长符合工艺要求","异常面料暂停流转"], metricLabel:"准备完成", target:1040 },
+      { id:"n07", no:7, label:"拉布", phase:"cutting-prep", role:"cutting", description:"按排料要求完成面料铺层，为裁剪作业准备。", input:"松布面料", output:"铺布层", rules:["铺布层数与排料计划一致","布面方向和对边需确认"], metricLabel:"铺布完成", target:1020 },
+      { id:"n08", no:8, label:"裁剪分包", phase:"cut-piece", role:"cutting", description:"完成裁剪、分包和批次标识，形成可流转的裁片包。", input:"铺布层", output:"裁片分包", rules:["裁片数量与排料计划核对","分包标识需关联款式和批次"], metricLabel:"分包完成", target:1000 },
+      { id:"n09", no:9, label:"裁片超市1入库", phase:"cut-piece", role:"warehouse", description:"将第一阶段裁片按款式、尺码和批次存入裁片超市。", input:"裁片分包", output:"裁片超市1库存", rules:["入库数量与分包单一致","批次标识完整"], metricLabel:"入库完成", target:980 },
+      { id:"n10", no:10, label:"裁片超市1出库", phase:"cut-piece", role:"warehouse", description:"依据后续裁片处理任务从裁片超市1拣配出库。", input:"裁片超市1库存", output:"待编码裁片", rules:["出库数量按任务核对","缺片必须及时反馈"], metricLabel:"出库完成", target:960 },
+      { id:"n11", no:11, label:"编码", phase:"cut-piece", role:"cutting", description:"为裁片绑定款式、尺码、批次和流转编码。", input:"待编码裁片", output:"已编码裁片", rules:["编码不得重复","编码必须可关联订单和批次"], metricLabel:"编码完成", target:940 },
+      { id:"n12", no:12, label:"验片", phase:"cut-piece", role:"quality", description:"核对裁片外观、数量、尺码和配套关系。", input:"已编码裁片", output:"合格裁片", rules:["缺片、错片及时隔离","验片结果需记录缺陷类型"], metricLabel:"验片合格", target:920 },
+      { id:"n13", no:13, label:"裁片超市2入库", phase:"cut-piece", role:"warehouse", description:"将验片合格裁片按批次存入第二裁片超市。", input:"合格裁片", output:"裁片超市2库存", rules:["库存批次与验片结果关联","账面数量与实物一致"], metricLabel:"入库完成", target:900 },
+      { id:"n14", no:14, label:"裁片超市2出库", phase:"cut-piece", role:"warehouse", description:"依据粘衬和车缝计划完成裁片超市2拣配出库。", input:"裁片超市2库存", output:"粘衬待处理裁片", rules:["出库数量按工单核对","缺片不得进入投料"], metricLabel:"出库完成", target:880 },
+      { id:"n15", no:15, label:"粘衬", phase:"cut-piece", role:"cutting", description:"按工艺要求完成粘衬，并记录批次和作业结果。", input:"粘衬待处理裁片", output:"粘衬裁片", rules:["温度、压力和时间符合工艺","粘衬异常需返工或隔离"], metricLabel:"粘衬完成", target:860 },
+      { id:"n16", no:16, label:"裁片交接", phase:"cut-piece", role:"warehouse", description:"将裁片和配套物料交接至车缝区域并完成确认。", input:"粘衬裁片", output:"产线待投料", rules:["交接双方确认数量","差异需现场复核并留痕"], metricLabel:"交接完成", target:840 },
+      { id:"n17", no:17, label:"车缝计划", phase:"sewing", role:"planning", description:"按产线能力、订单交期和备料状态安排车缝任务。", input:"工单与车缝备料", output:"车缝排程", rules:["优先处理交期风险订单","排程变更需保留记录"], metricLabel:"计划达成", target:820 },
+      { id:"n18", no:18, label:"线外工序", phase:"sewing", role:"sewing", description:"完成印花、绣花或其他线外加工并返回主流程。", input:"线外任务", output:"合格半成品", rules:["外协批次可追溯","逾期需触发预警"], metricLabel:"完成数量", target:800 },
+      { id:"n19", no:19, label:"关键工序", phase:"sewing", role:"sewing", description:"执行影响产品质量和节拍的关键车缝工序。", input:"合格半成品", output:"关键工序半成品", rules:["关键工序按标准节拍报工","停线超过阈值触发告警"], metricLabel:"完成数量", target:780 },
+      { id:"n20", no:20, label:"拼接工序", phase:"sewing", role:"sewing", description:"完成主要裁片拼接和整件成衣组合。", input:"关键工序半成品", output:"拼接成衣", rules:["拼接顺序按工艺执行","异常部件需隔离返工"], metricLabel:"拼接完成", target:760 },
+      { id:"n21", no:21, label:"QC1组检", phase:"quality", role:"quality", description:"对拼接产出执行组检，识别缺陷并判定返工。", input:"拼接成衣", output:"QC1组检结果", rules:["不良需关联原因代码","返工品必须重新检验"], metricLabel:"组检合格", target:740 },
+      { id:"n22", no:22, label:"后道计划", phase:"finishing", role:"planning", description:"依据组检结果、订单交期和后道能力安排后道任务。", input:"QC1组检合格品", output:"后道排程", rules:["优先处理交期风险订单","计划变更需保留记录"], metricLabel:"计划达成", target:720 },
+      { id:"n23", no:23, label:"后道收包", phase:"finishing", role:"finishing", description:"接收车缝合格品并按订单、尺码和批次收包。", input:"后道排程", output:"后道在制品", rules:["交接数量双方确认","差异需现场复核"], metricLabel:"收包完成", target:700 },
+      { id:"n24", no:24, label:"特殊工艺", phase:"finishing", role:"finishing", description:"按款式要求完成水洗、特殊处理或其他后道工艺。", input:"后道在制品", output:"特殊工艺成衣", rules:["特殊工艺按款式执行","异常批次需隔离"], metricLabel:"工艺完成", target:680 },
+      { id:"n25", no:25, label:"后道QC2-1", phase:"quality", role:"quality", description:"对特殊工艺后的成衣执行后道阶段质量检查。", input:"特殊工艺成衣", output:"后道QC2-1结果", rules:["异常需关联工艺环节","返工后重新检验"], metricLabel:"检验合格", target:660 },
+      { id:"n26", no:26, label:"整烫", phase:"finishing", role:"finishing", description:"按产品工艺完成整烫与外观定型。", input:"后道QC2-1合格品", output:"整烫成衣", rules:["温度与时间符合工艺","外观异常返回处理"], metricLabel:"整烫完成", target:640 },
+      { id:"n27", no:27, label:"后道QC2-2", phase:"quality", role:"quality", description:"对整烫后的成衣执行后道终检。", input:"整烫成衣", output:"后道QC2-2结果", rules:["不合格品不得进入包装","终检结果关联订单和批次"], metricLabel:"终检合格", target:620 },
+      { id:"n28", no:28, label:"吊牌", phase:"finishing", role:"finishing", description:"按订单和款式完成吊牌、洗标等标识安装。", input:"后道QC2-2合格品", output:"带标识成衣", rules:["吊牌内容与订单一致","错标必须隔离处理"], metricLabel:"吊牌完成", target:600 },
+      { id:"n29", no:29, label:"PE袋", phase:"finishing", role:"finishing", description:"按款式和包装要求完成 PE 袋包装。", input:"带标识成衣", output:"袋装成衣", rules:["包装规格与订单一致","包装数量按箱规核对"], metricLabel:"包装完成", target:580 },
+      { id:"n30", no:30, label:"检针", phase:"quality", role:"quality", description:"对包装前或包装后成衣执行检针和安全确认。", input:"袋装成衣", output:"检针结果", rules:["检针异常立即隔离","检针记录需关联批次"], metricLabel:"检针合格", target:560 },
+      { id:"n31", no:31, label:"装箱", phase:"shipping", role:"warehouse", description:"按订单、尺码和箱规完成装箱与箱唛确认。", input:"检针合格品", output:"成品箱", rules:["箱内数量与装箱单一致","箱唛信息必须准确"], metricLabel:"装箱完成", target:540 },
+      { id:"n32", no:32, label:"成品入库", phase:"shipping", role:"warehouse", description:"将装箱成品按订单和库位完成成品入库。", input:"成品箱", output:"成品库存", rules:["入库数量与装箱单一致","库存状态可追溯"], metricLabel:"入库完成", target:520 },
+      { id:"n33", no:33, label:"成品出库", phase:"shipping", role:"warehouse", description:"根据出货计划完成成品出库和交付登记。", input:"成品库存", output:"出货记录", rules:["出库数量与出货单一致","出货完成后关闭订单交付节点"], metricLabel:"出库完成", target:500 }
+    ];
+
+    function buildNodes(factoryKey, sourceNodes = baseNodes) {
+      const isIbmd = factoryKey === "ibmd";
+      return sourceNodes.map((node, index) => {
+        const completedUntil = isIbmd ? 16 : Math.min(20, sourceNodes.length - 1);
+        const progress = index < completedUntil ? "completed" : index < completedUntil + 8 ? "active" : "pending";
+        const ratioBase = isIbmd ? 0.82 : 0.91;
+        const variance = ((index % 5) - 2) * 0.025;
+        let ratio = Math.max(.48, Math.min(.98, ratioBase + variance));
+        let risk = "normal";
+        let exception = "当前运行正常，未发现需要升级处理的异常。";
+
+        if (isIbmd && node.label === "面辅检验") {
+          risk = "warning"; ratio = .76; exception = "面料 A 检验待处理数量偏高，建议核对检验结果和在途到货。";
+        }
+        if (isIbmd && node.label === "PartLine 车缝") {
+          risk = "warning"; ratio = .79; exception = "PartLine L7 节拍连续 20 分钟低于计划，当前完成率 79%。";
+        }
+        if (isIbmd && node.label === "HangerLine 车缝") {
+          risk = "danger"; ratio = .50; exception = "HangerLine L2 组立进度降至 50%，已形成后续工序等待。";
+        }
+        if (isIbmd && node.label === "后道 QC2") {
+          risk = "warning"; ratio = .81; exception = "后道终检外观缺陷较上一时段上升，需关注整烫和后道质量稳定性。";
+        }
+        if (!isIbmd && node.label === "裁片交接") {
+          risk = "warning"; ratio = .84; exception = "裁片交接较计划晚 18 分钟，尚未影响车缝主计划。";
+        }
+
+        const target = node.target;
+        const actual = target === 100 ? Math.round(ratio * 100) : Math.round(target * ratio);
+        return { ...node, progress, risk, ratio, actual, exception };
+      });
+    }
+
+    const factories = {
+      ibmd: {
+        id:"ibmd", name:"IBMD 工厂", overallRisk:"danger", state:"重点关注", progressRate:82,
+        utilization:92, defectRate:1.8, delayRisk:3, input:1240, completed:860, abnormalProcesses:1,
+        leadTime:4.2, updated:"11:12", nodes:buildNodes("ibmd")
+      },
+      tc: {
+        id:"tc", name:"TC 工厂", overallRisk:"warning", state:"总体可控", progressRate:91,
+        utilization:88, defectRate:1.2, delayRisk:1, input:980, completed:892, abnormalProcesses:0,
+        leadTime:3.6, updated:"11:10", nodes:buildNodes("tc", tcNodes)
+      }
+    };
+
+    const data = {
+      title:"集团工厂生产管制塔",
+      roles:Object.entries(roleMeta).map(([id, role]) => ({ id, ...role })),
+      nodes:baseNodes,
+      edges:baseNodes.slice(0, -1).map((node, i) => ({ from:node.id, to:baseNodes[i + 1].id, label:"完成后流转" })),
+      states:[
+        { id:"completed", label:"已完成" },
+        { id:"active", label:"进行中" },
+        { id:"pending", label:"未开始" }
+      ]
+    };
+
+    let activeFactoryId = "ibmd";
+    let selectedNodeId = "n01";
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let isDetailOpen = false;
+    let detailManuallyHidden = false;
+    let detailReturnFocus = null;
+    let dragStart = { x:0, y:0 };
+    const AUTO_CYCLE_MS = 5000;
+    let autoCycleTimer = null;
+    let refreshAnimationTimer = null;
+
+    const factoryCards = document.getElementById("factoryCards");
+    const factorySummary = document.getElementById("factorySummary");
+    const moreFactories = document.getElementById("moreFactories");
+    const moreFactoryMenu = document.getElementById("moreFactoryMenu");
+    const nodeLayer = document.getElementById("nodeLayer");
+    const edgeLayer = document.getElementById("edgeLayer");
+    const viewport = document.getElementById("processViewport");
+    const flowContent = document.getElementById("flowContent");
+    const processSection = document.querySelector(".process-section");
+    const processToolsToggle = document.getElementById("processToolsToggle");
+    const workspace = document.querySelector(".workspace");
+    const detailPanel = document.getElementById("detailPanel");
+    const detailDrawerTrigger = document.getElementById("detailDrawerTrigger");
+    const detailClose = document.getElementById("detailClose");
+    const nodeSearch = document.getElementById("nodeSearch");
+    const phaseFilter = document.getElementById("phaseFilter");
+    const riskFilter = document.getElementById("riskFilter");
+
+    function factoryOrder() {
+      return Object.values(factories).sort((a, b) => riskMeta[b.overallRisk].weight - riskMeta[a.overallRisk].weight);
+    }
+
+    function renderFactoryCards() {
+      const orderedFactories = factoryOrder();
+      const navWidth = document.querySelector(".factory-nav-shell")?.clientWidth || window.innerWidth;
+      const visibleLimit = navWidth < 560 ? 2 : navWidth < 820 ? 3 : 4;
+      const visibleFactories = orderedFactories.slice(0, visibleLimit);
+      const overflowFactories = orderedFactories.slice(visibleLimit);
+      factoryCards.innerHTML = visibleFactories.map(factory => {
+        const risk = riskMeta[factory.overallRisk];
+        return `
+          <button class="factory-tab ${factory.id === activeFactoryId ? "active" : ""}" style="--risk-color:${risk.color}" data-factory="${factory.id}" type="button" role="tab" aria-selected="${factory.id === activeFactoryId}">
+            <span class="factory-tab-name">${factory.name}</span>
+            <span class="factory-tab-state"><i class="risk-dot"></i>${factory.state}</span>
+          </button>`;
+      }).join("");
+
+      moreFactories.hidden = overflowFactories.length === 0;
+      moreFactoryMenu.innerHTML = overflowFactories.map(factory => {
+        const risk = riskMeta[factory.overallRisk];
+        return `<button class="more-factory-option" style="--risk-color:${risk.color}" data-factory="${factory.id}" type="button"><span>${factory.name}</span><span class="factory-tab-state"><i class="risk-dot"></i>${factory.state}</span></button>`;
+      }).join("");
+
+      document.querySelectorAll("[data-factory]").forEach(card => {
+        card.addEventListener("click", () => selectFactory(card.dataset.factory));
+      });
+      renderFactorySummary(factories[activeFactoryId]);
+    }
+
+    function renderFactorySummary(factory) {
+      const productionItems = [
+        ["投入数", factory.input.toLocaleString("zh-CN"), "件"],
+        ["完成数", factory.completed.toLocaleString("zh-CN"), "件"],
+        ["进度率", factory.progressRate, "%"],
+        ["异常工序", factory.abnormalProcesses, "项"],
+        ["平均周期", factory.leadTime, "天"]
+      ];
+      const kpiItems = [
+        ["稼动率", factory.utilization, "%", "normal"],
+        ["不良率", factory.defectRate, "%", "normal"],
+        ["在库异常", factory.abnormalProcesses, "项", factory.abnormalProcesses ? "danger" : "normal"],
+        ["延期风险", factory.delayRisk, "项", factory.delayRisk ? "warning" : "normal"]
+      ];
+      factorySummary.innerHTML = `
+        <div class="factory-summary-group production">
+          <span class="factory-summary-group-title">今日生产摘要</span>
+          <div class="factory-summary-items">${productionItems.map(item => `<div class="factory-summary-item"><label>${item[0]}</label><strong>${item[1]}<small>${item[2]}</small></strong></div>`).join("")}</div>
+        </div>
+        <div class="factory-summary-divider" aria-hidden="true"></div>
+        <div class="factory-summary-group kpi">
+          <span class="factory-summary-group-title">主要 KPI</span>
+          <div class="factory-summary-items">${kpiItems.map(item => `<div class="factory-summary-item"><label>${item[0]}</label><strong>${item[1]}<small>${item[2]}</small><i class="kpi-status-dot" style="--kpi-color:${riskMeta[item[3]].color}" aria-hidden="true"></i></strong></div>`).join("")}</div>
+        </div>`;
+    }
+
+    function selectFactory(id) {
+      clearDataRefreshState();
+      activeFactoryId = id;
+      const factory = factories[id];
+      selectedNodeId = factory.nodes[0].id;
+      nodeSearch.value = "";
+      phaseFilter.value = "all";
+      riskFilter.value = "all";
+      resetCanvas();
+      detailManuallyHidden = false;
+      closeDetailDrawer({ returnFocus:false, manual:false });
+      setProcessToolsOpen(false);
+      moreFactories.open = false;
+      renderAll();
+      showSelectedNodeAutomatically();
+      restartAutoCycle();
+    }
+
+    function setProcessToolsOpen(open) {
+      processSection.classList.toggle("tools-open", open);
+      processToolsToggle.setAttribute("aria-expanded", String(open));
+      processToolsToggle.title = open ? "收起流程工具" : "展开流程工具";
+      processToolsToggle.setAttribute("aria-label", open ? "收起流程工具" : "展开流程工具");
+    }
+
+    function renderAll() {
+      renderFactoryCards();
+      const factory = factories[activeFactoryId];
+      document.getElementById("processTitle").textContent = `${factory.name} · ${factory.nodes.length} 节点流程`;
+      document.getElementById("processSubTitle").textContent = `${factory.state} · 实时生产状态`;
+      renderSummary(factory);
+      renderAlerts(factory);
+      renderTicker(factory);
+      renderNodes(factory);
+      renderDetails(factory.nodes.find(n => n.id === selectedNodeId) || factory.nodes[0]);
+      requestAnimationFrame(drawEdges);
+    }
+
+    function renderSummary(factory) {
+      const items = [
+        ["投入数", factory.input.toLocaleString("zh-CN"), "件"],
+        ["完成数", factory.completed.toLocaleString("zh-CN"), "件"],
+        ["进度率", factory.progressRate, "%"],
+        ["平均周期", factory.leadTime, "天"]
+      ];
+      document.getElementById("summaryGrid").innerHTML = items.map(item => `
+        <div class="summary-item"><label>${item[0]}</label><strong>${item[1]}<small>${item[2]}</small></strong></div>
+      `).join("");
+      document.getElementById("summaryTime").textContent = `更新于 ${factory.updated}`;
+    }
+
+    function renderAlerts(factory) {
+      const alerts = factory.nodes
+        .filter(node => node.risk !== "normal")
+        .sort((a,b) => riskMeta[b.risk].weight - riskMeta[a.risk].weight)
+        .slice(0, 3);
+
+      document.getElementById("alertList").innerHTML = alerts.length ? alerts.map(node => `
+        <div class="alert-row">
+          <i class="dot" style="--alert-color:${riskMeta[node.risk].color}"></i>
+          <strong>${String(node.no).padStart(2,"0")} ${node.label} · ${node.exception}</strong>
+          <time>${factory.updated}</time>
+        </div>
+      `).join("") : `
+        <div class="alert-row"><i class="dot" style="--alert-color:${riskMeta.normal.color}"></i><strong>实时状态暂无重点异常</strong><time>${factory.updated}</time></div>
+      `;
+    }
+
+    function renderTicker(factory) {
+      const alert = factory.nodes
+        .filter(node => node.risk !== "normal")
+        .sort((a,b) => riskMeta[b.risk].weight - riskMeta[a.risk].weight)[0];
+      document.getElementById("tickerText").textContent = alert
+        ? `${factory.name} · ${String(alert.no).padStart(2,"0")} ${alert.label}：${alert.exception}`
+        : `${factory.name} · 实时状态暂无需要播报的重点异常`;
+      document.getElementById("tickerTime").textContent = factory.updated;
+    }
+
+    function rowCountsForNodeCount(nodeCount) {
+      return nodeCount === 33 ? [11, 11, 11] : [13, 13, 12];
+    }
+
+    function rowIndexForNode(index, rowCounts) {
+      let rowStart = 0;
+      for (let row = 0; row < rowCounts.length; row += 1) {
+        if (index < rowStart + rowCounts[row]) return row;
+        rowStart += rowCounts[row];
+      }
+      return rowCounts.length - 1;
+    }
+
+    function nodePosition(index, nodeCount = factories[activeFactoryId].nodes.length) {
+      const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
+      const rowCounts = rowCountsForNodeCount(nodeCount);
+      const nodeWidth = viewportWidth <= 1500 ? 68 : Math.min(104, Math.max(76, viewportWidth * .0535));
+      const nodeHeight = viewportHeight < 590 ? 72 : 84;
+      const sidePadding = 24;
+      const usableWidth = Math.max(320, viewportWidth - sidePadding * 2 - nodeWidth);
+      const rowGap = Math.max(96, (viewportHeight - nodeHeight - 122) / 2);
+      const rowY = [40, 40 + rowGap, 40 + rowGap * 2];
+      const row = rowIndexForNode(index, rowCounts);
+      let rowStart = 0;
+      for (let i = 0; i < row; i += 1) rowStart += rowCounts[i];
+      const positionInRow = index - rowStart;
+      const reverse = row === 1;
+      const xIndex = reverse ? rowCounts[row] - 1 - positionInRow : positionInRow;
+      const rowStepX = usableWidth / (rowCounts[row] - 1);
+      return { x:sidePadding + xIndex * rowStepX, y:rowY[row] };
+    }
+
+    function renderNodes(factory) {
+      const query = nodeSearch.value.trim().toLowerCase();
+      const phase = phaseFilter.value;
+      const risk = riskFilter.value;
+      const nodeCount = factory.nodes.length;
+      const rowCounts = rowCountsForNodeCount(nodeCount);
+      let visibleCount = 0;
+
+      nodeLayer.innerHTML = factory.nodes.map((node, index) => {
+        const pos = nodePosition(index, nodeCount);
+        const row = rowIndexForNode(index, rowCounts) + 1;
+        const matchesQuery = !query || node.label.toLowerCase().includes(query) || roleMeta[node.role].name.includes(query);
+        const matchesPhase = phase === "all" || node.phase === phase;
+        const matchesRisk = risk === "all" || node.risk === risk;
+        const filtered = !(matchesQuery && matchesPhase && matchesRisk);
+        if (!filtered) visibleCount += 1;
+        const riskInfo = riskMeta[node.risk];
+        const metricValue = node.target === 100 ? `${node.actual}%` : `${node.actual}/${node.target}`;
+        return `
+          <button class="process-node risk-${node.risk} progress-${node.progress} row-${row} ${node.id === selectedNodeId && !filtered ? "selected" : ""} ${filtered ? "filtered" : ""}"
+            type="button" data-node="${node.id}" style="left:${pos.x}px;top:${pos.y}px;--risk-color:${riskInfo.color};--role-color:${roleMeta[node.role].color}"
+            aria-label="${node.no} ${node.label}，共 ${nodeCount} 个节点，${progressMeta[node.progress].label}，${riskInfo.label}">
+            <span class="node-topline"><span class="node-no">${String(node.no).padStart(2,"0")}</span><i class="progress-mark ${node.progress}" title="${progressMeta[node.progress].label}"></i><i class="risk-corner" aria-hidden="true"></i></span>
+            <span class="node-label">${node.label}</span>
+            <span class="node-metric">${node.metricLabel} ${metricValue}</span>
+          </button>`;
+      }).join("");
+
+      document.getElementById("emptyResult").style.display = visibleCount ? "none" : "block";
+      nodeLayer.querySelectorAll(".process-node").forEach(button => {
+        button.addEventListener("click", event => {
+          event.stopPropagation();
+          selectedNodeId = button.dataset.node;
+          selectNode(selectedNodeId, button, { automatic:false });
+        });
+      });
+    }
+
+    function selectNode(id, trigger = null, { automatic = false, refresh = automatic } = {}) {
+      const factory = factories[activeFactoryId];
+      const node = factory.nodes.find(item => item.id === id);
+      if (!node) return;
+      if (!refresh) clearDataRefreshState();
+      nodeLayer.querySelectorAll(".process-node").forEach(button => button.classList.toggle("selected", button.dataset.node === id));
+      renderDetails(node);
+      openDetailDrawer(trigger || nodeLayer.querySelector(`[data-node="${id}"]`), { focus:!automatic, manual:!automatic });
+      drawEdges();
+      if (refresh) triggerDataRefresh(id);
+      if (!automatic) restartAutoCycle();
+    }
+
+    function clearDataRefreshState() {
+      window.clearTimeout(refreshAnimationTimer);
+      refreshAnimationTimer = null;
+      nodeLayer.querySelectorAll(".is-refreshing").forEach(button => button.classList.remove("is-refreshing"));
+      detailPanel.classList.remove("is-refreshing");
+    }
+
+    function triggerDataRefresh(nodeId) {
+      clearDataRefreshState();
+      const button = nodeLayer.querySelector(`[data-node="${nodeId}"]`);
+      if (!button) return;
+      button.classList.add("is-refreshing");
+      detailPanel.classList.add("is-refreshing");
+      refreshAnimationTimer = window.setTimeout(() => {
+        button.classList.remove("is-refreshing");
+        detailPanel.classList.remove("is-refreshing");
+        refreshAnimationTimer = null;
+      }, 700);
+    }
+
+    function refreshProcessLayout() {
+      renderNodes(factories[activeFactoryId]);
+      window.requestAnimationFrame(drawEdges);
+    }
+
+    function openDetailDrawer(returnFocusTarget = null, { focus = true, manual = true } = {}) {
+      if (!manual && detailManuallyHidden) return;
+      if (manual) detailManuallyHidden = false;
+      if (returnFocusTarget) detailReturnFocus = returnFocusTarget;
+      isDetailOpen = true;
+      workspace.classList.add("detail-open");
+      workspace.classList.remove("detail-collapsed");
+      detailPanel.classList.add("is-open");
+      detailPanel.setAttribute("aria-hidden", "false");
+      detailDrawerTrigger.setAttribute("aria-expanded", "true");
+      refreshProcessLayout();
+      if (focus) requestAnimationFrame(() => document.getElementById("detailTitle").focus({ preventScroll:true }));
+    }
+
+    function visibleNodeButtons() {
+      return Array.from(nodeLayer.querySelectorAll(".process-node:not(.filtered)"));
+    }
+
+    function showSelectedNodeAutomatically() {
+      const visibleButtons = visibleNodeButtons();
+      if (!visibleButtons.length) return false;
+      const selectedButton = visibleButtons.find(button => button.dataset.node === selectedNodeId) || visibleButtons[0];
+      selectedNodeId = selectedButton.dataset.node;
+      selectNode(selectedNodeId, selectedButton, { automatic:true, refresh:false });
+      return true;
+    }
+
+    function advanceAutoCycle() {
+      const visibleButtons = visibleNodeButtons();
+      if (!visibleButtons.length) {
+        closeDetailDrawer({ returnFocus:false, manual:false });
+        restartAutoCycle();
+        return;
+      }
+      const currentIndex = visibleButtons.findIndex(button => button.dataset.node === selectedNodeId);
+      const nextButton = visibleButtons[(currentIndex + 1 + visibleButtons.length) % visibleButtons.length];
+      selectedNodeId = nextButton.dataset.node;
+      selectNode(selectedNodeId, nextButton, { automatic:true });
+      restartAutoCycle();
+    }
+
+    function restartAutoCycle() {
+      window.clearTimeout(autoCycleTimer);
+      if (document.hidden) return;
+      autoCycleTimer = window.setTimeout(advanceAutoCycle, AUTO_CYCLE_MS);
+    }
+
+    function closeDetailDrawer({ returnFocus = true, manual = true } = {}) {
+      if (manual) detailManuallyHidden = true;
+      isDetailOpen = false;
+      workspace.classList.remove("detail-open");
+      workspace.classList.add("detail-collapsed");
+      detailPanel.classList.remove("is-open");
+      detailPanel.setAttribute("aria-hidden", "true");
+      detailDrawerTrigger.setAttribute("aria-expanded", "false");
+      refreshProcessLayout();
+      if (returnFocus) {
+        const focusTarget = detailReturnFocus && document.body.contains(detailReturnFocus)
+          ? detailReturnFocus
+          : detailDrawerTrigger;
+        focusTarget.focus({ preventScroll:true });
+      }
+    }
+
+    function renderDetails(node) {
+      const factory = factories[activeFactoryId];
+      const risk = riskMeta[node.risk];
+      const progress = progressMeta[node.progress];
+      document.getElementById("detailTitle").textContent = node.label;
+      document.getElementById("detailIndex").textContent = `${String(node.no).padStart(2,"0")} / ${factory.nodes.length}`;
+      document.getElementById("detailStatus").innerHTML = `
+        <span class="status-chip" style="--chip-color:${progress.color}">${progress.label}</span>
+        <span class="status-chip" style="--chip-color:${risk.color}">${risk.label}</span>
+        <span class="status-chip" style="--chip-color:${roleMeta[node.role].color}">${roleMeta[node.role].name}</span>`;
+
+      const exceptionNormal = node.risk === "normal";
+      document.getElementById("detailContent").innerHTML = `
+        <section class="detail-section">
+          <div class="section-label">节点说明</div>
+          <p class="detail-description">${node.description}</p>
+        </section>
+        <section class="detail-section">
+          <div class="section-label">当前完成情况</div>
+          <div class="metric-pair">
+            <div class="metric-box" style="--box-color:${progress.color}"><label>${node.metricLabel}</label><strong>${node.actual}<small>${node.target === 100 ? "%" : " 件"}</small></strong></div>
+            <div class="metric-box" style="--box-color:${risk.color}"><label>计划目标</label><strong>${node.target}<small>${node.target === 100 ? "%" : " 件"}</small></strong></div>
+          </div>
+        </section>
+        <section class="detail-section">
+          <div class="section-label">业务信息</div>
+          <dl class="definition-list">
+            <dt>责任角色</dt><dd>${roleMeta[node.role].name}</dd>
+            <dt>输入</dt><dd>${node.input}</dd>
+            <dt>输出</dt><dd>${node.output}</dd>
+            <dt>汇总口径</dt><dd>按当前实时最严重风险显示</dd>
+          </dl>
+        </section>
+        <section class="detail-section">
+          <div class="section-label">当前状态</div>
+          <div class="exception-box ${exceptionNormal ? "normal" : ""}">
+            <strong>${exceptionNormal ? "运行正常" : `${risk.label}事项`}</strong>
+            <p>${node.exception}</p>
+          </div>
+        </section>
+        <section class="detail-section">
+          <div class="section-label">关键规则</div>
+          <ul class="rule-list">${node.rules.map(rule => `<li>${rule}</li>`).join("")}</ul>
+        </section>`;
+      document.getElementById("detailUpdated").textContent = `更新于 ${factories[activeFactoryId].updated}`;
+      detailDrawerTrigger.style.setProperty("--risk-color", risk.color);
+      detailDrawerTrigger.title = `展开${node.label}节点详情`;
+      detailDrawerTrigger.setAttribute("aria-label", `展开${node.label}节点详情`);
+    }
+
+    function drawEdges() {
+      const factory = factories[activeFactoryId];
+      const contentRect = flowContent.getBoundingClientRect();
+      const rowCounts = rowCountsForNodeCount(factory.nodes.length);
+      const turnIndexes = [rowCounts[0] - 1, rowCounts[0] + rowCounts[1] - 1];
+      edgeLayer.setAttribute("viewBox", `0 0 ${flowContent.clientWidth} ${flowContent.clientHeight}`);
+      const markers = `<defs>
+        <marker id="arrowNormal" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#1f5889" /></marker>
+        <marker id="arrowActive" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#18b8d8" /></marker>
+        <marker id="arrowWarning" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#f4c95d" /></marker>
+        <marker id="arrowDanger" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#ff3857" /></marker>
+      </defs>`;
+      edgeLayer.innerHTML = markers + factory.nodes.slice(0, -1).map((node, index) => {
+        const nextNode = factory.nodes[index + 1];
+        const from = nodeLayer.querySelector(`[data-node="${node.id}"]`);
+        const to = nodeLayer.querySelector(`[data-node="${nextNode.id}"]`);
+        if (!from || !to || from.classList.contains("filtered") || to.classList.contains("filtered")) return "";
+        const a = from.querySelector(".node-no").getBoundingClientRect();
+        const b = to.querySelector(".node-no").getBoundingClientRect();
+        const ax = (a.left - contentRect.left) / scale + a.width / (2 * scale);
+        const ay = (a.top - contentRect.top) / scale + a.height / (2 * scale);
+        const bx = (b.left - contentRect.left) / scale + b.width / (2 * scale);
+        const by = (b.top - contentRect.top) / scale + b.height / (2 * scale);
+        const turnIndex = turnIndexes.indexOf(index);
+        const isTurn = turnIndex !== -1;
+        let path;
+        if (isTurn) {
+          const direction = turnIndex === 0 ? 1 : -1;
+          const radiusX = Math.max(30, flowContent.clientWidth * .12);
+          const controlX = ax + direction * radiusX;
+          path = `M ${ax} ${ay} C ${controlX} ${ay}, ${controlX} ${by}, ${bx} ${by}`;
+        } else {
+          const midX = (ax + bx) / 2;
+          const amplitude = index % 2 === 0 ? -20 : 20;
+          path = `M ${ax} ${ay} C ${midX} ${ay + amplitude}, ${midX} ${by - amplitude}, ${bx} ${by}`;
+        }
+        const active = node.id === selectedNodeId || nextNode.id === selectedNodeId;
+        const edgeRisk = node.risk === "danger" || nextNode.risk === "danger"
+          ? "danger"
+          : node.risk === "warning" || nextNode.risk === "warning" ? "warning" : "normal";
+        const edgeRiskClass = edgeRisk === "normal" ? "" : ` edge-${edgeRisk}`;
+        const markerId = edgeRisk === "danger" ? "arrowDanger" : edgeRisk === "warning" ? "arrowWarning" : active ? "arrowActive" : "arrowNormal";
+        return `<g class="flow-edge-group">
+          <path class="flow-edge ${active ? "active" : ""}${edgeRiskClass}" d="${path}" marker-end="url(#${markerId})" />
+          <path class="flow-edge-stream ${active ? "active" : ""}${edgeRiskClass}" d="${path}" />
+        </g>`;
+      }).join("");
+    }
+
+    function applyFilters() {
+      clearDataRefreshState();
+      renderNodes(factories[activeFactoryId]);
+      const selectedButton = nodeLayer.querySelector(`[data-node="${selectedNodeId}"]`);
+      if (!selectedButton || selectedButton.classList.contains("filtered")) {
+        if (!showSelectedNodeAutomatically()) closeDetailDrawer({ returnFocus:false, manual:false });
+      }
+      requestAnimationFrame(drawEdges);
+      restartAutoCycle();
+    }
+
+    function setScale(nextScale) {
+      scale = Math.max(.82, Math.min(1.14, nextScale));
+      applyTransform();
+      requestAnimationFrame(drawEdges);
+    }
+
+    function applyTransform() {
+      flowContent.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+
+    function resetCanvas() {
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      applyTransform();
+    }
+
+    nodeSearch.addEventListener("input", applyFilters);
+    phaseFilter.addEventListener("change", applyFilters);
+    riskFilter.addEventListener("change", applyFilters);
+    processToolsToggle.addEventListener("click", () => {
+      setProcessToolsOpen(!processSection.classList.contains("tools-open"));
+    });
+    detailDrawerTrigger.addEventListener("click", () => {
+      detailReturnFocus = detailDrawerTrigger;
+      openDetailDrawer(detailDrawerTrigger);
+    });
+    detailClose.addEventListener("click", () => closeDetailDrawer());
+    document.getElementById("zoomIn").addEventListener("click", () => setScale(scale + .08));
+    document.getElementById("zoomOut").addEventListener("click", () => setScale(scale - .08));
+    document.getElementById("resetView").addEventListener("click", () => { resetCanvas(); drawEdges(); });
+
+    viewport.addEventListener("wheel", event => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setScale(scale + (event.deltaY < 0 ? .06 : -.06));
+    }, { passive:false });
+
+    viewport.addEventListener("pointerdown", event => {
+      if (event.target.closest("button, input, select")) return;
+      if (isDetailOpen) closeDetailDrawer({ returnFocus:false });
+      isDragging = true;
+      dragStart = { x:event.clientX - panX, y:event.clientY - panY };
+      viewport.classList.add("dragging");
+      viewport.setPointerCapture(event.pointerId);
+    });
+
+    viewport.addEventListener("pointermove", event => {
+      if (!isDragging) return;
+      panX = Math.max(-180, Math.min(180, event.clientX - dragStart.x));
+      panY = Math.max(-100, Math.min(100, event.clientY - dragStart.y));
+      applyTransform();
+    });
+
+    viewport.addEventListener("pointerup", event => {
+      isDragging = false;
+      viewport.classList.remove("dragging");
+      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && isDetailOpen) closeDetailDrawer();
+      if (event.key === "Escape" && processSection.classList.contains("tools-open")) {
+        setProcessToolsOpen(false);
+        processToolsToggle.focus({ preventScroll:true });
+      }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        window.clearTimeout(autoCycleTimer);
+        clearDataRefreshState();
+      } else {
+        restartAutoCycle();
+      }
+    });
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("currentTime").textContent = new Intl.DateTimeFormat("zh-CN", {
+        year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
+      }).format(now).replaceAll("/", "-");
+    }
+
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { renderNodes(factories[activeFactoryId]); drawEdges(); }, 120);
+    });
+
+    let layoutResizeTimer;
+    if (typeof ResizeObserver === "function") {
+      const layoutObserver = new ResizeObserver(() => {
+        clearTimeout(layoutResizeTimer);
+        layoutResizeTimer = setTimeout(() => {
+          renderNodes(factories[activeFactoryId]);
+          drawEdges();
+        }, 80);
+      });
+      layoutObserver.observe(viewport);
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderAll();
+    requestAnimationFrame(() => {
+      showSelectedNodeAutomatically();
+      restartAutoCycle();
+    });
+  </script>
+</body>
+</html>
